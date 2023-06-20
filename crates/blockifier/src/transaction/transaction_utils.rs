@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-
-use cairo_felt::Felt252;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use crate::abi::constants;
+use crate::collections::HashMap;
 use crate::execution::entry_point::{CallInfo, ExecutionResources};
-use crate::execution::execution_utils::stark_felt_to_felt;
 use crate::fee::gas_usage::calculate_tx_gas_usage;
 use crate::fee::os_usage::get_additional_os_resources;
 use crate::state::cached_state::TransactionalState;
@@ -12,6 +11,8 @@ use crate::state::state_api::StateReader;
 use crate::transaction::errors::TransactionExecutionError;
 use crate::transaction::objects::{ResourcesMapping, TransactionExecutionResult};
 use crate::transaction::transaction_types::TransactionType;
+
+pub const BUILTIN_NAME_SUFFIX: &str = "_builtin";
 
 const FEE_TRANSFER_N_STORAGE_CHANGES: u8 = 2; // Sender and sequencer balance update.
 // Exclude the sequencer balance update, since it's charged once throughout the batch.
@@ -37,7 +38,8 @@ pub fn verify_no_calls_to_other_contracts(
 /// I.e., L1 gas usage and Cairo VM execution resources.
 pub fn calculate_tx_resources<S: StateReader>(
     execution_resources: ExecutionResources,
-    call_infos: &[&CallInfo],
+    validate_call_info: Option<&CallInfo>,
+    execute_call_info: Option<&CallInfo>,
     tx_type: TransactionType,
     state: &mut TransactionalState<'_, S>,
     l1_handler_payload_size: Option<usize>,
@@ -45,8 +47,13 @@ pub fn calculate_tx_resources<S: StateReader>(
     let (n_storage_changes, n_modified_contracts, n_class_updates) =
         state.count_actual_state_changes();
 
+    let non_optional_call_infos: Vec<&CallInfo> = vec![execute_call_info, validate_call_info]
+        .iter()
+        .flat_map(|&optional_call_info| optional_call_info)
+        .collect();
+
     let mut l2_to_l1_payloads_length = vec![];
-    for call_info in call_infos {
+    for call_info in non_optional_call_infos {
         l2_to_l1_payloads_length.extend(call_info.get_sorted_l2_to_l1_payloads_length()?);
     }
 
@@ -72,8 +79,4 @@ pub fn calculate_tx_resources<S: StateReader>(
     tx_resources.extend(total_vm_usage.builtin_instance_counter);
 
     Ok(ResourcesMapping(tx_resources))
-}
-
-pub fn update_remaining_gas(remaining_gas: &mut Felt252, call_info: &CallInfo) {
-    *remaining_gas -= stark_felt_to_felt(call_info.execution.gas_consumed);
 }

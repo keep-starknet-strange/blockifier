@@ -1,11 +1,16 @@
-use std::collections::{HashMap, HashSet};
+use alloc::sync::Arc;
+#[cfg(feature = "std")]
+use std::collections::hash_map::RandomState as HasherBuilder;
 
 use derive_more::IntoIterator;
+#[cfg(not(feature = "std"))]
+use hashbrown::hash_map::DefaultHashBuilder as HasherBuilder;
 use indexmap::IndexMap;
-use starknet_api::core::{ClassHash, CompiledClassHash, ContractAddress, Nonce};
+use starknet_api::api_core::{ClassHash, ContractAddress, Nonce};
 use starknet_api::hash::StarkFelt;
-use starknet_api::state::StorageKey;
+use starknet_api::state::{StateDiff, StorageKey};
 
+use crate::collections::{HashMap, HashSet};
 use crate::execution::contract_class::ContractClass;
 use crate::state::errors::StateError;
 use crate::state::state_api::{State, StateReader, StateResult};
@@ -15,20 +20,8 @@ use crate::utils::subtract_mappings;
 #[path = "cached_state_test.rs"]
 mod test;
 
-pub type ContractClassMapping = HashMap<ClassHash, ContractClass>;
+type ContractClassMapping = HashMap<ClassHash, Arc<ContractClass>>;
 pub type TransactionalState<'a, S> = CachedState<MutRefState<'a, CachedState<S>>>;
-
-/// Holds uncommitted changes induced on StarkNet contracts.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct CommitmentStateDiff {
-    // Contract instance attributes (per address).
-    pub address_to_class_hash: IndexMap<ContractAddress, ClassHash>,
-    pub address_to_nonce: IndexMap<ContractAddress, Nonce>,
-    pub storage_updates: IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt>>,
-
-    // Global attributes.
-    pub class_hash_to_compiled_class_hash: IndexMap<ClassHash, CompiledClassHash>,
-}
 
 /// Caches read and write requests.
 ///
@@ -56,7 +49,7 @@ impl<S: StateReader> CachedState<S> {
         let mut modified_contracts: HashSet<ContractAddress> =
             storage_updates.keys().map(|address_key_pair| address_key_pair.0).collect();
 
-        // Class hash Update (deployed contracts + replace_class syscall).
+        // Class hash Update (deployed contracts).
         let class_hash_updates = &self.cache.get_class_hash_updates();
         modified_contracts.extend(class_hash_updates.keys());
 
@@ -107,12 +100,9 @@ impl<S: StateReader> StateReader for CachedState<S> {
         Ok(*class_hash)
     }
 
-    fn get_compiled_contract_class(
-        &mut self,
-        class_hash: &ClassHash,
-    ) -> StateResult<ContractClass> {
+    fn get_contract_class(&mut self, class_hash: &ClassHash) -> StateResult<Arc<ContractClass>> {
         if !self.class_hash_to_class.contains_key(class_hash) {
-            let contract_class = self.state.get_compiled_contract_class(class_hash)?;
+            let contract_class = self.state.get_contract_class(class_hash)?;
             self.class_hash_to_class.insert(*class_hash, contract_class);
         }
 
@@ -121,19 +111,6 @@ impl<S: StateReader> StateReader for CachedState<S> {
             .get(class_hash)
             .expect("The class hash must appear in the cache.");
         Ok(contract_class.clone())
-    }
-
-    fn get_compiled_class_hash(&mut self, class_hash: ClassHash) -> StateResult<CompiledClassHash> {
-        if self.cache.get_compiled_class_hash(class_hash).is_none() {
-            let compiled_class_hash = self.state.get_compiled_class_hash(class_hash)?;
-            self.cache.set_compiled_class_hash_initial_value(class_hash, compiled_class_hash);
-        }
-
-        let compiled_class_hash = self
-            .cache
-            .get_compiled_class_hash(class_hash)
-            .unwrap_or_else(|| panic!("Cannot retrieve '{class_hash:?}' from the cache."));
-        Ok(*compiled_class_hash)
     }
 }
 
@@ -166,6 +143,11 @@ impl<S: StateReader> State for CachedState<S> {
             return Err(StateError::OutOfRangeContractAddress);
         }
 
+        let current_class_hash = self.get_class_hash_at(contract_address)?;
+        if current_class_hash != ClassHash::default() {
+            return Err(StateError::UnavailableContractAddress(contract_address));
+        }
+
         self.cache.set_class_hash_write(contract_address, class_hash);
         Ok(())
     }
@@ -175,34 +157,32 @@ impl<S: StateReader> State for CachedState<S> {
         class_hash: &ClassHash,
         contract_class: ContractClass,
     ) -> StateResult<()> {
-        self.class_hash_to_class.insert(*class_hash, contract_class);
+        self.class_hash_to_class.insert(*class_hash, Arc::from(contract_class));
         Ok(())
     }
 
-    fn set_compiled_class_hash(
-        &mut self,
-        class_hash: ClassHash,
-        compiled_class_hash: CompiledClassHash,
-    ) -> StateResult<()> {
-        self.cache.set_compiled_class_hash_write(class_hash, compiled_class_hash);
-        Ok(())
-    }
-
-    fn to_state_diff(&self) -> CommitmentStateDiff {
-        type StorageDiff = IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt>>;
+    fn to_state_diff(&self) -> StateDiff {
+        type StorageDiff = IndexMap<
+            ContractAddress,
+            IndexMap<StorageKey, StarkFelt, HasherBuilder>,
+            HasherBuilder,
+        >;
 
         let state_cache = &self.cache;
-        let class_hash_updates = state_cache.get_class_hash_updates();
+
+        // Contract instance attributes.
+        let deployed_contracts = state_cache.get_class_hash_updates();
         let storage_diffs = state_cache.get_storage_updates();
         let nonces =
             subtract_mappings(&state_cache.nonce_writes, &state_cache.nonce_initial_values);
-        let declared_classes = state_cache.compiled_class_hash_writes.clone();
 
-        CommitmentStateDiff {
-            address_to_class_hash: IndexMap::from_iter(class_hash_updates),
-            storage_updates: StorageDiff::from(StorageView(storage_diffs)),
-            class_hash_to_compiled_class_hash: IndexMap::from_iter(declared_classes),
-            address_to_nonce: IndexMap::from_iter(nonces),
+        StateDiff {
+            deployed_contracts: IndexMap::from_iter(deployed_contracts),
+            storage_diffs: StorageDiff::from(StorageView(storage_diffs)),
+            declared_classes: IndexMap::with_hasher(HasherBuilder::default()),
+            deprecated_declared_classes: IndexMap::with_hasher(HasherBuilder::default()),
+            nonces: IndexMap::from_iter(nonces),
+            replaced_classes: IndexMap::with_hasher(HasherBuilder::default()),
         }
     }
 }
@@ -213,16 +193,18 @@ pub type ContractStorageKey = (ContractAddress, StorageKey);
 pub struct StorageView(pub HashMap<ContractStorageKey, StarkFelt>);
 
 /// Converts a `CachedState`'s storage mapping into a `StateDiff`'s storage mapping.
-impl From<StorageView> for IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt>> {
+impl From<StorageView>
+    for IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt, HasherBuilder>, HasherBuilder>
+{
     fn from(storage_view: StorageView) -> Self {
-        let mut storage_updates = Self::new();
+        let mut storage_updates = Self::with_capacity_and_hasher(0, HasherBuilder::default());
         for ((address, key), value) in storage_view.into_iter() {
             storage_updates
                 .entry(address)
                 .and_modify(|map| {
                     map.insert(key, value);
                 })
-                .or_insert_with(|| IndexMap::from([(key, value)]));
+                .or_insert_with(|| IndexMap::from_iter([(key, value)]));
         }
 
         storage_updates
@@ -230,7 +212,6 @@ impl From<StorageView> for IndexMap<ContractAddress, IndexMap<StorageKey, StarkF
 }
 
 /// Caches read and write requests.
-/// The tracked changes are needed for block state commitment.
 
 // Invariant: keys cannot be deleted from fields (only used internally by the cached state).
 #[derive(Debug, Default, PartialEq)]
@@ -239,13 +220,11 @@ struct StateCache {
     nonce_initial_values: HashMap<ContractAddress, Nonce>,
     class_hash_initial_values: HashMap<ContractAddress, ClassHash>,
     storage_initial_values: HashMap<ContractStorageKey, StarkFelt>,
-    compiled_class_hash_initial_values: HashMap<ClassHash, CompiledClassHash>,
 
     // Writer's cached information.
     nonce_writes: HashMap<ContractAddress, Nonce>,
     class_hash_writes: HashMap<ContractAddress, ClassHash>,
     storage_writes: HashMap<ContractStorageKey, StarkFelt>,
-    compiled_class_hash_writes: HashMap<ClassHash, CompiledClassHash>,
 }
 
 impl StateCache {
@@ -312,28 +291,6 @@ impl StateCache {
         self.class_hash_writes.insert(contract_address, class_hash);
     }
 
-    fn get_compiled_class_hash(&self, class_hash: ClassHash) -> Option<&CompiledClassHash> {
-        self.compiled_class_hash_writes
-            .get(&class_hash)
-            .or_else(|| self.compiled_class_hash_initial_values.get(&class_hash))
-    }
-
-    fn set_compiled_class_hash_initial_value(
-        &mut self,
-        class_hash: ClassHash,
-        compiled_class_hash: CompiledClassHash,
-    ) {
-        self.compiled_class_hash_initial_values.insert(class_hash, compiled_class_hash);
-    }
-
-    fn set_compiled_class_hash_write(
-        &mut self,
-        class_hash: ClassHash,
-        compiled_class_hash: CompiledClassHash,
-    ) {
-        self.compiled_class_hash_writes.insert(class_hash, compiled_class_hash);
-    }
-
     fn get_storage_updates(&self) -> HashMap<ContractStorageKey, StarkFelt> {
         subtract_mappings(&self.storage_writes, &self.storage_initial_values)
     }
@@ -345,16 +302,16 @@ impl StateCache {
 
 /// Wraps a mutable reference to a `State` object, exposing its API.
 /// Used to pass ownership to a `CachedState`.
-pub struct MutRefState<'a, S: State + ?Sized>(&'a mut S);
+pub struct MutRefState<'a, S: State>(&'a mut S);
 
-impl<'a, S: State + ?Sized> MutRefState<'a, S> {
+impl<'a, S: State> MutRefState<'a, S> {
     pub fn new(state: &'a mut S) -> Self {
         Self(state)
     }
 }
 
 /// Proxies inner object to expose `State` functionality.
-impl<'a, S: State + ?Sized> StateReader for MutRefState<'a, S> {
+impl<'a, S: State> StateReader for MutRefState<'a, S> {
     fn get_storage_at(
         &mut self,
         contract_address: ContractAddress,
@@ -371,19 +328,12 @@ impl<'a, S: State + ?Sized> StateReader for MutRefState<'a, S> {
         self.0.get_class_hash_at(contract_address)
     }
 
-    fn get_compiled_contract_class(
-        &mut self,
-        class_hash: &ClassHash,
-    ) -> StateResult<ContractClass> {
-        self.0.get_compiled_contract_class(class_hash)
-    }
-
-    fn get_compiled_class_hash(&mut self, class_hash: ClassHash) -> StateResult<CompiledClassHash> {
-        self.0.get_compiled_class_hash(class_hash)
+    fn get_contract_class(&mut self, class_hash: &ClassHash) -> StateResult<Arc<ContractClass>> {
+        self.0.get_contract_class(class_hash)
     }
 }
 
-impl<'a, S: State + ?Sized> State for MutRefState<'a, S> {
+impl<'a, S: State> State for MutRefState<'a, S> {
     fn set_storage_at(
         &mut self,
         contract_address: ContractAddress,
@@ -413,16 +363,8 @@ impl<'a, S: State + ?Sized> State for MutRefState<'a, S> {
         self.0.set_contract_class(class_hash, contract_class)
     }
 
-    fn to_state_diff(&self) -> CommitmentStateDiff {
+    fn to_state_diff(&self) -> StateDiff {
         self.0.to_state_diff()
-    }
-
-    fn set_compiled_class_hash(
-        &mut self,
-        class_hash: ClassHash,
-        compiled_class_hash: CompiledClassHash,
-    ) -> StateResult<()> {
-        self.0.set_compiled_class_hash(class_hash, compiled_class_hash)
     }
 }
 
@@ -436,7 +378,6 @@ impl<'a, S: StateReader> TransactionalState<'a, S> {
         parent_cache.nonce_writes.extend(child_cache.nonce_writes);
         parent_cache.class_hash_writes.extend(child_cache.class_hash_writes);
         parent_cache.storage_writes.extend(child_cache.storage_writes);
-        parent_cache.compiled_class_hash_writes.extend(child_cache.compiled_class_hash_writes);
         self.state.0.class_hash_to_class.extend(self.class_hash_to_class);
     }
 

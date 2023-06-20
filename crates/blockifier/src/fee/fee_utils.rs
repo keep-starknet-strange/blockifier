@@ -1,9 +1,12 @@
-use std::collections::HashSet;
+use alloc::string::String;
 
+#[cfg(not(feature = "std"))]
+use num_traits::Float;
 use starknet_api::transaction::Fee;
 
 use crate::abi::constants;
 use crate::block_context::BlockContext;
+use crate::collections::HashSet;
 use crate::transaction::errors::TransactionExecutionError;
 use crate::transaction::objects::{ResourcesMapping, TransactionExecutionResult};
 

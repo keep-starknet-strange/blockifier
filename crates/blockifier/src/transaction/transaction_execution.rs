@@ -1,66 +1,23 @@
-use cairo_felt::Felt252;
-use starknet_api::transaction::{Fee, Transaction as StarknetApiTransaction, TransactionSignature};
+use starknet_api::transaction::{Fee, L1HandlerTransaction, TransactionSignature};
 
-use crate::abi::constants as abi_constants;
 use crate::block_context::BlockContext;
-use crate::execution::contract_class::ContractClass;
-use crate::execution::entry_point::{EntryPointExecutionContext, ExecutionResources};
-use crate::fee::fee_utils::calculate_tx_fee;
+use crate::execution::entry_point::ExecutionResources;
 use crate::state::cached_state::TransactionalState;
 use crate::state::state_api::StateReader;
 use crate::transaction::account_transaction::AccountTransaction;
-use crate::transaction::errors::TransactionExecutionError;
 use crate::transaction::objects::{
     AccountTransactionContext, TransactionExecutionInfo, TransactionExecutionResult,
 };
 use crate::transaction::transaction_types::TransactionType;
 use crate::transaction::transaction_utils::calculate_tx_resources;
-use crate::transaction::transactions::{
-    DeclareTransaction, Executable, ExecutableTransaction, L1HandlerTransaction,
-};
+use crate::transaction::transactions::{Executable, ExecutableTransaction};
 
 #[derive(Debug)]
+// TODO(Gilad, 15/4/2023): Remove clippy ignore, box large variants.
+#[allow(clippy::large_enum_variant)]
 pub enum Transaction {
     AccountTransaction(AccountTransaction),
     L1HandlerTransaction(L1HandlerTransaction),
-}
-
-impl Transaction {
-    /// Returns the initial gas of the transaction to run with.
-    pub fn initial_gas() -> Felt252 {
-        Felt252::from(abi_constants::INITIAL_GAS_COST - abi_constants::TRANSACTION_GAS_COST)
-    }
-}
-
-impl Transaction {
-    pub fn from_api(
-        tx: StarknetApiTransaction,
-        contract_class: Option<ContractClass>,
-        paid_fee_on_l1: Option<Fee>,
-    ) -> TransactionExecutionResult<Self> {
-        match tx {
-            StarknetApiTransaction::L1Handler(l1_handler) => {
-                Ok(Self::L1HandlerTransaction(L1HandlerTransaction {
-                    tx: l1_handler,
-                    paid_fee_on_l1: paid_fee_on_l1
-                        .expect("L1Handler should be created with the fee paid on L1"),
-                }))
-            }
-            StarknetApiTransaction::Declare(declare) => {
-                Ok(Self::AccountTransaction(AccountTransaction::Declare(DeclareTransaction::new(
-                    declare,
-                    contract_class.expect("Declare should be created with a ContractClass"),
-                )?)))
-            }
-            StarknetApiTransaction::DeployAccount(deploy_account) => {
-                Ok(Self::AccountTransaction(AccountTransaction::DeployAccount(deploy_account)))
-            }
-            StarknetApiTransaction::Invoke(invoke) => {
-                Ok(Self::AccountTransaction(AccountTransaction::Invoke(invoke)))
-            }
-            _ => unimplemented!(),
-        }
-    }
 }
 
 impl<S: StateReader> ExecutableTransaction<S> for L1HandlerTransaction {
@@ -69,43 +26,29 @@ impl<S: StateReader> ExecutableTransaction<S> for L1HandlerTransaction {
         state: &mut TransactionalState<'_, S>,
         block_context: &BlockContext,
     ) -> TransactionExecutionResult<TransactionExecutionInfo> {
-        let tx = &self.tx;
         let tx_context = AccountTransactionContext {
-            transaction_hash: tx.transaction_hash,
+            transaction_hash: self.transaction_hash,
             max_fee: Fee::default(),
-            version: tx.version,
+            version: self.version,
             signature: TransactionSignature::default(),
-            nonce: tx.nonce,
-            sender_address: tx.contract_address,
+            nonce: self.nonce,
+            sender_address: self.contract_address,
         };
-        let mut resources = ExecutionResources::default();
-        let mut context = EntryPointExecutionContext::new(
-            block_context.clone(),
-            tx_context,
-            block_context.invoke_tx_max_n_steps,
-        );
-        let mut remaining_gas = Transaction::initial_gas();
+        let mut execution_resources = ExecutionResources::default();
         let execute_call_info =
-            self.run_execute(state, &mut resources, &mut context, &mut remaining_gas)?;
+            self.run_execute(state, &mut execution_resources, block_context, &tx_context, None)?;
 
-        let call_infos =
-            if let Some(call_info) = execute_call_info.as_ref() { vec![call_info] } else { vec![] };
+        let validate_call_info = None;
         // The calldata includes the "from" field, which is not a part of the payload.
-        let l1_handler_payload_size = Some(tx.calldata.0.len() - 1);
+        let l1_handler_payload_size = Some(self.calldata.0.len() - 1);
         let actual_resources = calculate_tx_resources(
-            resources,
-            &call_infos,
+            execution_resources,
+            execute_call_info.as_ref(),
+            validate_call_info,
             TransactionType::L1Handler,
             state,
             l1_handler_payload_size,
         )?;
-        let actual_fee = calculate_tx_fee(&actual_resources, &context.block_context)?;
-        let paid_fee = self.paid_fee_on_l1;
-        // For now, assert only that any amount of fee was paid.
-        // The error message still indicates the required fee.
-        if paid_fee == Fee(0) {
-            return Err(TransactionExecutionError::InsufficientL1Fee { paid_fee, actual_fee });
-        }
 
         Ok(TransactionExecutionInfo {
             validate_call_info: None,
@@ -113,7 +56,6 @@ impl<S: StateReader> ExecutableTransaction<S> for L1HandlerTransaction {
             fee_transfer_call_info: None,
             actual_fee: Fee::default(),
             actual_resources,
-            revert_error: None,
         })
     }
 }

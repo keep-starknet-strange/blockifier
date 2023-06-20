@@ -1,15 +1,19 @@
-use cairo_vm::types::errors::math_errors::MathError;
+use alloc::boxed::Box;
+use alloc::string::{String, ToString};
+
+use cairo_vm::types::relocatable::Relocatable;
 use cairo_vm::vm::errors::cairo_run_errors::CairoRunError;
+use cairo_vm::vm::errors::hint_errors::HintError;
 use cairo_vm::vm::errors::memory_errors::MemoryError;
 use cairo_vm::vm::errors::runner_errors::RunnerError;
 use cairo_vm::vm::errors::vm_errors::VirtualMachineError;
 use num_bigint::{BigInt, TryFromBigIntError};
-use starknet_api::core::{ContractAddress, EntryPointSelector};
+use starknet_api::api_core::{ContractAddress, EntryPointSelector};
 use starknet_api::deprecated_contract_class::EntryPointType;
 use starknet_api::hash::StarkFelt;
-use thiserror::Error;
+use starknet_api::StarknetApiError;
+use thiserror_no_std::Error;
 
-use crate::execution::execution_utils::felts_as_str;
 use crate::state::errors::StateError;
 
 // TODO(AlonH, 21/12/2022): Implement Display for all types that appear in errors.
@@ -20,12 +24,8 @@ pub enum PreExecutionError {
     EntryPointNotFound(EntryPointSelector),
     #[error("Entry point {selector:?} of type {typ:?} is not unique.")]
     DuplicatedEntryPointSelector { selector: EntryPointSelector, typ: EntryPointType },
-    #[error("Invalid builtin {0:?}.")]
-    InvalidBuiltin(String),
     #[error("No entry points of type {0:?} found in contract.")]
     NoEntryPointOfTypeFound(EntryPointType),
-    #[error(transparent)]
-    MathError(#[from] MathError),
     #[error(transparent)]
     MemoryError(#[from] MemoryError),
     #[error(transparent)]
@@ -56,13 +56,41 @@ pub enum PostExecutionError {
     SecurityValidationError(String),
     #[error(transparent)]
     VirtualMachineError(#[from] VirtualMachineError),
-    #[error("Malformed return data : {error_message}.")]
-    MalformedReturnData { error_message: String },
 }
 
 impl From<RunnerError> for PostExecutionError {
     fn from(error: RunnerError) -> Self {
         Self::SecurityValidationError(error.to_string())
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum SyscallExecutionError {
+    #[error("Bad syscall_ptr; expected: {expected_ptr:?}, got: {actual_ptr:?}.")]
+    BadSyscallPointer { expected_ptr: Relocatable, actual_ptr: Relocatable },
+    #[error(transparent)]
+    InnerCallExecutionError(#[from] EntryPointExecutionError),
+    #[error("Invalid syscall input: {input:?}; {info}")]
+    InvalidSyscallInput { input: StarkFelt, info: String },
+    #[error("Invalid syscall selector: {0:?}.")]
+    InvalidSyscallSelector(StarkFelt),
+    #[error(transparent)]
+    MathError(#[from] cairo_vm::types::errors::math_errors::MathError),
+    #[error(transparent)]
+    MemoryError(#[from] MemoryError),
+    #[error(transparent)]
+    StarknetApiError(#[from] StarknetApiError),
+    #[error(transparent)]
+    StateError(#[from] StateError),
+    #[error(transparent)]
+    VirtualMachineError(#[from] VirtualMachineError),
+}
+
+// Needed for custom hint implementations (in our case, syscall hints) which must comply with the
+// cairo-rs API.
+impl From<SyscallExecutionError> for HintError {
+    fn from(error: SyscallExecutionError) -> Self {
+        HintError::CustomHint(error.to_string())
     }
 }
 
@@ -118,8 +146,6 @@ impl VirtualMachineExecutionError {
 
 #[derive(Debug, Error)]
 pub enum EntryPointExecutionError {
-    #[error("Execution failed. Failure reason: {:?}.", felts_as_str(.error_data))]
-    ExecutionFailed { error_data: Vec<StarkFelt> },
     #[error("Invalid input: {input_descriptor}; {info}")]
     InvalidExecutionInput { input_descriptor: String, info: String },
     #[error(transparent)]

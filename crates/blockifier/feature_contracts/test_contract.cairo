@@ -8,7 +8,6 @@ from starkware.starknet.common.syscalls import (
     library_call,
     deploy,
     call_contract,
-    replace_class,
 )
 from starkware.starknet.core.os.contract_address.contract_address import get_contract_address
 
@@ -75,13 +74,6 @@ func test_storage_read_write{syscall_ptr: felt*}(address: felt, value: felt) -> 
 }
 
 @external
-func write_and_revert{syscall_ptr: felt*}(address: felt, value: felt) {
-    storage_write(address=address, value=value);
-    assert 0 = 1;
-    return ();
-}
-
-@external
 func test_long_retdata() -> (a: felt, b: felt, c: felt, d: felt, e: felt) {
     return (a=0, b=1, c=2, d=3, e=4);
 }
@@ -138,12 +130,6 @@ func test_call_contract{syscall_ptr: felt*}(
         calldata=calldata,
     );
     return (retdata_size=retdata_size, retdata=retdata);
-}
-
-@external
-func test_replace_class{syscall_ptr: felt*}(class_hash: felt) -> () {
-    replace_class(class_hash=class_hash);
-    return ();
 }
 
 @external

@@ -1,11 +1,10 @@
-use starknet_api::core::{ClassHash, CompiledClassHash, ContractAddress, Nonce};
-use starknet_api::hash::StarkFelt;
-use starknet_api::state::StorageKey;
+use alloc::sync::Arc;
 
-use crate::abi::abi_utils::get_erc20_balance_var_addresses;
-use crate::block_context::BlockContext;
+use starknet_api::api_core::{ClassHash, ContractAddress, Nonce};
+use starknet_api::hash::StarkFelt;
+use starknet_api::state::{StateDiff, StorageKey};
+
 use crate::execution::contract_class::ContractClass;
-use crate::state::cached_state::CommitmentStateDiff;
 use crate::state::errors::StateError;
 
 pub type StateResult<T> = Result<T, StateError>;
@@ -33,26 +32,7 @@ pub trait StateReader {
     fn get_class_hash_at(&mut self, contract_address: ContractAddress) -> StateResult<ClassHash>;
 
     /// Returns the contract class of the given class hash.
-    fn get_compiled_contract_class(&mut self, class_hash: &ClassHash)
-    -> StateResult<ContractClass>;
-
-    /// Returns the compiled class hash of the given class hash.
-    fn get_compiled_class_hash(&mut self, class_hash: ClassHash) -> StateResult<CompiledClassHash>;
-
-    /// Returns the storage value representing the balance (in fee token) at the given address.
-    // TODO(Dori, 1/7/2023): When a standard representation for large integers is set, change the
-    //    return type to that.
-    fn get_fee_token_balance(
-        &mut self,
-        block_context: &BlockContext,
-        contract_address: &ContractAddress,
-    ) -> Result<(StarkFelt, StarkFelt), StateError> {
-        let (low_key, high_key) = get_erc20_balance_var_addresses(contract_address)?;
-        let low = self.get_storage_at(block_context.fee_token_address, low_key)?;
-        let high = self.get_storage_at(block_context.fee_token_address, high_key)?;
-
-        Ok((low, high))
-    }
+    fn get_contract_class(&mut self, class_hash: &ClassHash) -> StateResult<Arc<ContractClass>>;
 }
 
 /// A class defining the API for writing to StarkNet global state.
@@ -87,12 +67,5 @@ pub trait State: StateReader {
         contract_class: ContractClass,
     ) -> StateResult<()>;
 
-    /// Sets the given compiled class hash under the given class hash.
-    fn set_compiled_class_hash(
-        &mut self,
-        class_hash: ClassHash,
-        compiled_class_hash: CompiledClassHash,
-    ) -> StateResult<()>;
-
-    fn to_state_diff(&self) -> CommitmentStateDiff;
+    fn to_state_diff(&self) -> StateDiff;
 }

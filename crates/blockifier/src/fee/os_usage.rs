@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources as VmExecutionResources;
 use serde::Deserialize;
 
-use crate::execution::deprecated_syscalls::hint_processor::SyscallCounter;
-use crate::execution::deprecated_syscalls::DeprecatedSyscallSelector;
+use crate::collections::HashMap;
+use crate::execution::syscall_handling::SyscallCounter;
+use crate::execution::syscalls::SyscallSelector;
 use crate::fee::os_resources::OS_RESOURCES;
 use crate::transaction::errors::TransactionExecutionError;
 use crate::transaction::transaction_types::TransactionType;
@@ -17,7 +16,7 @@ pub mod test;
 pub struct OsResources {
     // Mapping from every syscall to its execution resources in the OS (e.g., amount of Cairo
     // steps).
-    execute_syscalls: HashMap<DeprecatedSyscallSelector, VmExecutionResources>,
+    execute_syscalls: HashMap<SyscallSelector, VmExecutionResources>,
     // Mapping from every transaction to its extra execution resources in the OS,
     // i.e., resources that don't count during the execution itself.
     execute_txs_inner: HashMap<TransactionType, VmExecutionResources>,
@@ -33,7 +32,7 @@ pub fn get_additional_os_resources(
     for (syscall_selector, count) in syscall_counter {
         let syscall_resources =
             OS_RESOURCES.execute_syscalls.get(&syscall_selector).unwrap_or_else(|| {
-                panic!("OS resources of syscall '{syscall_selector:?}' are unknown.")
+                panic!("OS resources of syscall '{:?}' are unknown.", syscall_selector)
             });
         os_additional_vm_resources += &(syscall_resources * count);
     }

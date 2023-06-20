@@ -1,4 +1,5 @@
-use std::iter::zip;
+use alloc::vec::Vec;
+use core::iter::zip;
 
 use cairo_felt::Felt252;
 use num_bigint::BigUint;
@@ -15,9 +16,9 @@ fn starkfelt_to_felt_pairs() -> Vec<(StarkFelt, Felt252)> {
 
     let starkfelt_from_hex_error_message = "`StarkFelt` construction from hex has failed.";
     let starkfelts = vec![
-        StarkFelt::from(0_u8),
-        StarkFelt::from(1_u8),
-        StarkFelt::from(1234_u16),
+        StarkFelt::from(0),
+        StarkFelt::from(1),
+        StarkFelt::from(1234),
         StarkFelt::try_from(STARK_PRIME_MINUS_ONE).expect(starkfelt_from_hex_error_message),
     ];
     let felts = vec![

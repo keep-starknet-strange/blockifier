@@ -1,25 +1,21 @@
-use std::collections::HashMap;
+use alloc::string::String;
 
 use assert_matches::assert_matches;
-use cairo_vm::vm::runners::builtin_runner::{
-    BITWISE_BUILTIN_NAME, HASH_BUILTIN_NAME, POSEIDON_BUILTIN_NAME, RANGE_CHECK_BUILTIN_NAME,
-    SIGNATURE_BUILTIN_NAME,
-};
 
-use crate::abi::constants;
 use crate::block_context::BlockContext;
+use crate::collections::HashMap;
 use crate::fee::fee_utils::calculate_l1_gas_by_vm_usage;
 use crate::transaction::errors::TransactionExecutionError;
 use crate::transaction::objects::ResourcesMapping;
 
 fn get_vm_resource_usage() -> ResourcesMapping {
     ResourcesMapping(HashMap::from([
-        (constants::N_STEPS_RESOURCE.to_string(), 1800),
-        (HASH_BUILTIN_NAME.to_string(), 10),
-        (RANGE_CHECK_BUILTIN_NAME.to_string(), 24),
-        (SIGNATURE_BUILTIN_NAME.to_string(), 1),
-        (BITWISE_BUILTIN_NAME.to_string(), 1),
-        (POSEIDON_BUILTIN_NAME.to_string(), 1),
+        (String::from("n_steps"), 1800),
+        (String::from("pedersen_builtin"), 10),
+        (String::from("range_check_builtin"), 24),
+        (String::from("ecdsa_builtin"), 1),
+        (String::from("bitwise_builtin"), 1),
+        (String::from("poseidon_builtin"), 1),
     ]))
 }
 
@@ -30,7 +26,7 @@ fn test_calculate_l1_gas_by_vm_usage() {
 
     // Positive flow.
     // Verify calculation - in our case, n_steps is the heaviest resource.
-    let l1_gas_by_vm_usage = vm_resource_usage.0.get(constants::N_STEPS_RESOURCE).unwrap();
+    let l1_gas_by_vm_usage = vm_resource_usage.0.get("n_steps").unwrap();
     assert_eq!(
         *l1_gas_by_vm_usage as f64,
         calculate_l1_gas_by_vm_usage(&block_context, &vm_resource_usage).unwrap()

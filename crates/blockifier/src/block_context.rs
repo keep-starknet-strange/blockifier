@@ -1,9 +1,11 @@
-use std::collections::HashMap;
+use alloc::string::String;
 
+use starknet_api::api_core::{ChainId, ContractAddress};
 use starknet_api::block::{BlockNumber, BlockTimestamp};
-use starknet_api::core::{ChainId, ContractAddress};
 
-#[derive(Clone, Debug)]
+use crate::collections::HashMap;
+
+#[derive(Debug)]
 pub struct BlockContext {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,

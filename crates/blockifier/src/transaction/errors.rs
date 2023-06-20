@@ -1,8 +1,10 @@
-use starknet_api::core::{ClassHash, ContractAddress, Nonce};
-use starknet_api::hash::StarkFelt;
+use alloc::string::String;
+use alloc::vec::Vec;
+
+use starknet_api::api_core::{ClassHash, ContractAddress, Nonce};
 use starknet_api::transaction::{Fee, TransactionVersion};
 use starknet_api::StarknetApiError;
-use thiserror::Error;
+use thiserror_no_std::Error;
 
 use crate::execution::errors::EntryPointExecutionError;
 use crate::state::errors::StateError;
@@ -11,11 +13,6 @@ use crate::state::errors::StateError;
 pub enum TransactionExecutionError {
     #[error("Cairo resource names must be contained in fee cost dict.")]
     CairoResourcesNotContainedInFeeCosts,
-    #[error(
-        "Declare transaction version {declare_version:?} must have a contract class of Cairo \
-         version {cairo_version:?}."
-    )]
-    ContractClassVersionMismatch { declare_version: TransactionVersion, cairo_version: u64 },
     #[error("Contract constructor execution has failed.")]
     ContractConstructorExecutionFailed(#[source] EntryPointExecutionError),
     #[error("Class with hash {class_hash:?} is already declared.")]
@@ -26,8 +23,6 @@ pub enum TransactionExecutionError {
     ExecutionError(#[source] EntryPointExecutionError),
     #[error("Actual fee ({actual_fee:?}) exceeded max fee ({max_fee:?}).")]
     FeeTransferError { max_fee: Fee, actual_fee: Fee },
-    #[error("Actual fee ({actual_fee:?}) exceeded paid fee on L1 ({paid_fee:?}).")]
-    InsufficientL1Fee { paid_fee: Fee, actual_fee: Fee },
     #[error(
         "Invalid transaction nonce of contract at address {address:?}. Expected: \
          {expected_nonce:?}; got: {actual_nonce:?}."
@@ -38,8 +33,6 @@ pub enum TransactionExecutionError {
          {allowed_versions:?}."
     )]
     InvalidVersion { version: TransactionVersion, allowed_versions: Vec<TransactionVersion> },
-    #[error("Max fee ({max_fee:?}) exceeds balance (Uint256({balance_low:?}, {balance_high:?})).")]
-    MaxFeeExceedsBalance { max_fee: Fee, balance_low: StarkFelt, balance_high: StarkFelt },
     #[error(transparent)]
     StarknetApiError(#[from] StarknetApiError),
     #[error(transparent)]

@@ -1,22 +1,21 @@
-use std::collections::HashSet;
+use alloc::string::ToString;
 
 use num_bigint::BigInt;
 use pretty_assertions::assert_eq;
-use starknet_api::core::{EntryPointSelector, PatriciaKey};
+use starknet_api::api_core::{EntryPointSelector, PatriciaKey};
 use starknet_api::hash::{StarkFelt, StarkHash};
 use starknet_api::state::StorageKey;
 use starknet_api::transaction::Calldata;
 use starknet_api::{calldata, patricia_key, stark_felt};
 
 use crate::abi::abi_utils::{get_storage_var_address, selector_from_name};
+use crate::collections::HashSet;
 use crate::execution::entry_point::{CallEntryPoint, CallExecution, CallInfo, Retdata};
-use crate::execution::errors::EntryPointExecutionError;
 use crate::retdata;
 use crate::state::cached_state::CachedState;
 use crate::test_utils::{
-    create_test_state, deprecated_create_test_state, pad_address_to_64,
-    trivial_external_entry_point, trivial_external_entry_point_security_test, DictStateReader,
-    SECURITY_TEST_CONTRACT_ADDRESS, TEST_CONTRACT_ADDRESS, TEST_CONTRACT_ADDRESS_2,
+    create_test_state, trivial_external_entry_point, trivial_external_entry_point_security_test,
+    DictStateReader,
 };
 
 #[test]
@@ -29,20 +28,20 @@ fn test_call_info_iteration() {
     //           |
     //       left_leaf (2)
     let left_leaf = CallInfo {
-        call: CallEntryPoint { calldata: calldata![stark_felt!(2_u8)], ..Default::default() },
+        call: CallEntryPoint { calldata: calldata![stark_felt!(2)], ..Default::default() },
         ..Default::default()
     };
     let right_leaf = CallInfo {
-        call: CallEntryPoint { calldata: calldata![stark_felt!(3_u8)], ..Default::default() },
+        call: CallEntryPoint { calldata: calldata![stark_felt!(3)], ..Default::default() },
         ..Default::default()
     };
     let inner_node = CallInfo {
-        call: CallEntryPoint { calldata: calldata![stark_felt!(1_u8)], ..Default::default() },
+        call: CallEntryPoint { calldata: calldata![stark_felt!(1)], ..Default::default() },
         inner_calls: vec![left_leaf],
         ..Default::default()
     };
     let root = CallInfo {
-        call: CallEntryPoint { calldata: calldata![stark_felt!(0_u8)], ..Default::default() },
+        call: CallEntryPoint { calldata: calldata![stark_felt!(0)], ..Default::default() },
         inner_calls: vec![inner_node, right_leaf],
         ..Default::default()
     };
@@ -54,7 +53,7 @@ fn test_call_info_iteration() {
 
 #[test]
 fn test_entry_point_without_arg() {
-    let mut state = deprecated_create_test_state();
+    let mut state = create_test_state();
     let entry_point_call = CallEntryPoint {
         entry_point_selector: selector_from_name("without_arg"),
         ..trivial_external_entry_point()
@@ -67,8 +66,8 @@ fn test_entry_point_without_arg() {
 
 #[test]
 fn test_entry_point_with_arg() {
-    let mut state = deprecated_create_test_state();
-    let calldata = calldata![stark_felt!(25_u8)];
+    let mut state = create_test_state();
+    let calldata = calldata![stark_felt!(25)];
     let entry_point_call = CallEntryPoint {
         calldata,
         entry_point_selector: selector_from_name("with_arg"),
@@ -82,7 +81,7 @@ fn test_entry_point_with_arg() {
 
 #[test]
 fn test_long_retdata() {
-    let mut state = deprecated_create_test_state();
+    let mut state = create_test_state();
     let calldata = calldata![];
     let entry_point_call = CallEntryPoint {
         calldata,
@@ -92,19 +91,19 @@ fn test_long_retdata() {
     assert_eq!(
         entry_point_call.execute_directly(&mut state).unwrap().execution,
         CallExecution::from_retdata(retdata![
-            stark_felt!(0_u8),
-            stark_felt!(1_u8),
-            stark_felt!(2_u8),
-            stark_felt!(3_u8),
-            stark_felt!(4_u8)
+            stark_felt!(0),
+            stark_felt!(1),
+            stark_felt!(2),
+            stark_felt!(3),
+            stark_felt!(4)
         ])
     );
 }
 
 #[test]
 fn test_entry_point_with_builtin() {
-    let mut state = deprecated_create_test_state();
-    let calldata = calldata![stark_felt!(47_u8), stark_felt!(31_u8)];
+    let mut state = create_test_state();
+    let calldata = calldata![stark_felt!(47), stark_felt!(31)];
     let entry_point_call = CallEntryPoint {
         calldata,
         entry_point_selector: selector_from_name("bitwise_and"),
@@ -118,8 +117,8 @@ fn test_entry_point_with_builtin() {
 
 #[test]
 fn test_entry_point_with_hint() {
-    let mut state = deprecated_create_test_state();
-    let calldata = calldata![stark_felt!(81_u8)];
+    let mut state = create_test_state();
+    let calldata = calldata![stark_felt!(81)];
     let entry_point_call = CallEntryPoint {
         calldata,
         entry_point_selector: selector_from_name("sqrt"),
@@ -133,8 +132,8 @@ fn test_entry_point_with_hint() {
 
 #[test]
 fn test_entry_point_with_return_value() {
-    let mut state = deprecated_create_test_state();
-    let calldata = calldata![stark_felt!(23_u8)];
+    let mut state = create_test_state();
+    let calldata = calldata![stark_felt!(23)];
     let entry_point_call = CallEntryPoint {
         calldata,
         entry_point_selector: selector_from_name("return_result"),
@@ -142,14 +141,14 @@ fn test_entry_point_with_return_value() {
     };
     assert_eq!(
         entry_point_call.execute_directly(&mut state).unwrap().execution,
-        CallExecution::from_retdata(retdata![stark_felt!(23_u8)])
+        CallExecution::from_retdata(retdata![stark_felt!(23)])
     );
 }
 
 #[test]
 fn test_entry_point_not_found_in_contract() {
-    let mut state = deprecated_create_test_state();
-    let entry_point_selector = EntryPointSelector(stark_felt!(2_u8));
+    let mut state = create_test_state();
+    let entry_point_selector = EntryPointSelector(stark_felt!(2));
     let entry_point_call =
         CallEntryPoint { entry_point_selector, ..trivial_external_entry_point() };
     let error = entry_point_call.execute_directly(&mut state).unwrap_err();
@@ -161,7 +160,7 @@ fn test_entry_point_not_found_in_contract() {
 
 #[test]
 fn test_storage_var() {
-    let mut state = deprecated_create_test_state();
+    let mut state = create_test_state();
     let entry_point_call = CallEntryPoint {
         entry_point_selector: selector_from_name("test_storage_var"),
         ..trivial_external_entry_point()
@@ -197,7 +196,7 @@ fn run_security_test(
 
 #[test]
 fn test_vm_execution_security_failures() {
-    let mut state = deprecated_create_test_state();
+    let mut state = create_test_state();
 
     run_security_test(
         "Expected relocatable",
@@ -274,7 +273,7 @@ fn test_vm_execution_security_failures() {
 
 #[test]
 fn test_builtin_execution_security_failures() {
-    let mut state = deprecated_create_test_state();
+    let mut state = create_test_state();
 
     run_security_test(
         "Inconsistent auto-deduction for builtin pedersen",
@@ -326,10 +325,10 @@ fn test_builtin_execution_security_failures() {
 
 #[test]
 fn test_syscall_execution_security_failures() {
-    let mut state = deprecated_create_test_state();
+    let mut state = create_test_state();
 
     for perform_inner_call_to_foo in 0..2 {
-        let calldata = calldata![stark_felt!(perform_inner_call_to_foo as u8)];
+        let calldata = calldata![stark_felt!(perform_inner_call_to_foo)];
         run_security_test(
             "Custom Hint Error: Out of range",
             "test_read_bad_address",
@@ -381,7 +380,7 @@ fn test_syscall_execution_security_failures() {
 
 #[test]
 fn test_post_run_validation_security_failure() {
-    let mut state = deprecated_create_test_state();
+    let mut state = create_test_state();
 
     run_security_test(
         "Missing memory cells for builtin range_check",
@@ -439,7 +438,7 @@ fn test_post_run_validation_security_failure() {
         &mut state,
     );
 
-    let calldata = calldata![stark_felt!(1_u8), stark_felt!(1_u8)];
+    let calldata = calldata![stark_felt!(1), stark_felt!(1)];
     run_security_test(
         "Validation failed: Read-only segments",
         "test_out_of_bounds_write_to_calldata_segment",
@@ -452,7 +451,7 @@ fn test_post_run_validation_security_failure() {
 // Note read values also contain the reads performed right before a write operation.
 #[test]
 fn test_storage_related_members() {
-    let mut state = deprecated_create_test_state();
+    let mut state = create_test_state();
 
     // Test storage variable.
     let entry_point_call = CallEntryPoint {
@@ -460,15 +459,15 @@ fn test_storage_related_members() {
         ..trivial_external_entry_point()
     };
     let actual_call_info = entry_point_call.execute_directly(&mut state).unwrap();
-    assert_eq!(actual_call_info.storage_read_values, vec![stark_felt!(0_u8), stark_felt!(39_u8)]);
+    assert_eq!(actual_call_info.storage_read_values, vec![stark_felt!(0), stark_felt!(39)]);
     assert_eq!(
         actual_call_info.accessed_storage_keys,
-        HashSet::from([get_storage_var_address("number_map", &[stark_felt!(1_u8)]).unwrap()])
+        HashSet::from([get_storage_var_address("number_map", &[stark_felt!(1)]).unwrap()])
     );
 
     // Test raw storage read and write.
-    let key = stark_felt!(1234_u16);
-    let value = stark_felt!(18_u8);
+    let key = stark_felt!(1234);
+    let value = stark_felt!(18);
     let calldata = calldata![key, value];
     let entry_point_call = CallEntryPoint {
         calldata,
@@ -476,75 +475,9 @@ fn test_storage_related_members() {
         ..trivial_external_entry_point()
     };
     let actual_call_info = entry_point_call.execute_directly(&mut state).unwrap();
-    assert_eq!(actual_call_info.storage_read_values, vec![stark_felt!(0_u8), value]);
+    assert_eq!(actual_call_info.storage_read_values, vec![stark_felt!(0), value]);
     assert_eq!(
         actual_call_info.accessed_storage_keys,
         HashSet::from([StorageKey(patricia_key!(key))])
     );
-}
-
-#[test]
-fn test_cairo1_entry_point_segment_arena() {
-    let mut state = create_test_state();
-    let calldata = calldata![];
-    let entry_point_call = CallEntryPoint {
-        calldata,
-        entry_point_selector: selector_from_name("segment_arena_builtin"),
-        ..trivial_external_entry_point()
-    };
-
-    entry_point_call.execute_directly(&mut state).unwrap();
-}
-
-#[test]
-fn test_stack_trace() {
-    let mut state = deprecated_create_test_state();
-    // Nest 3 calls: test_call_contract -> test_call_contract -> assert_0_is_1.
-    let outer_entry_point_selector = selector_from_name("test_call_contract");
-    let inner_entry_point_selector = selector_from_name("foo");
-    let calldata = calldata![
-        stark_felt!(TEST_CONTRACT_ADDRESS_2), // Contract address.
-        outer_entry_point_selector.0,         // Calling test_call_contract again.
-        stark_felt!(3_u8),                    /* Calldata length for inner
-                                               * test_call_contract. */
-        stark_felt!(SECURITY_TEST_CONTRACT_ADDRESS), // Contract address.
-        inner_entry_point_selector.0,                // Function selector.
-        stark_felt!(0_u8)                            // Innermost calldata length.
-    ];
-    let entry_point_call = CallEntryPoint {
-        entry_point_selector: outer_entry_point_selector,
-        calldata,
-        ..trivial_external_entry_point()
-    };
-    let expected_trace = format!(
-        "Error in the called contract ({}):
-Error at pc=0:19:
-Got an exception while executing a hint.
-Cairo traceback (most recent call last):
-Unknown location (pc=0:658)
-Unknown location (pc=0:641)
-
-Error in the called contract ({}):
-Error at pc=0:19:
-Got an exception while executing a hint.
-Cairo traceback (most recent call last):
-Unknown location (pc=0:658)
-Unknown location (pc=0:641)
-
-Error in the called contract ({}):
-Error at pc=0:58:
-An ASSERT_EQ instruction failed: 1 != 0.
-Cairo traceback (most recent call last):
-Unknown location (pc=0:62)
-",
-        pad_address_to_64(TEST_CONTRACT_ADDRESS),
-        pad_address_to_64(TEST_CONTRACT_ADDRESS_2),
-        pad_address_to_64(SECURITY_TEST_CONTRACT_ADDRESS)
-    );
-    match entry_point_call.execute_directly(&mut state).unwrap_err() {
-        EntryPointExecutionError::VirtualMachineExecutionErrorWithTrace { trace, source: _ } => {
-            assert_eq!(trace, expected_trace)
-        }
-        other_error => panic!("Unexpected error type: {other_error:?}"),
-    }
 }

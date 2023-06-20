@@ -1,17 +1,8 @@
 use std::fs;
 use std::process::Command;
 
-const FEATURE_CONTRACTS_DIR: &str = "feature_contracts/cairo0";
+const FEATURE_CONTRACTS_DIR: &str = "feature_contracts";
 const COMPILED_CONTRACTS_SUBDIR: &str = "compiled";
-const FIX_COMMAND: &str = "FIX_FEATURE_TEST=1 cargo test -- --ignored";
-
-// To fix feature contracts, first enter a python venv and install the requirements:
-// ```
-// python -m venv tmp_venv
-// . tmp_venv/bin/activate
-// pip install -r crates/blockifier/tests/requirements.txt
-// ```
-// Then, run the FIX_COMMAND above.
 
 // Checks that:
 // 1. `TEST_CONTRACTS` dir exists and contains only `.cairo` files and the subdirectory
@@ -67,11 +58,7 @@ fn verify_feature_contracts_compatibility(fix: bool) {
             .unwrap_or_else(|_| panic!("Cannot read {existing_compiled_path}."));
 
         if String::from_utf8(expected_compiled_output).unwrap() != existing_compiled_contents {
-            panic!(
-                "{path_str} does not compile to {existing_compiled_path}.\nRun `{FIX_COMMAND}` to \
-                 fix the expected test according to locally installed \
-                 `starknet-compile-deprecated`.\n"
-            );
+            panic!("{path_str} does not compile to {existing_compiled_path}")
         }
     }
 }
@@ -79,6 +66,5 @@ fn verify_feature_contracts_compatibility(fix: bool) {
 #[test]
 #[ignore]
 fn verify_feature_contracts() {
-    let fix_features = std::env::var("FIX_FEATURE_TEST").is_ok();
-    verify_feature_contracts_compatibility(fix_features)
+    verify_feature_contracts_compatibility(false)
 }

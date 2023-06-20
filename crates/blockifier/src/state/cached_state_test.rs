@@ -1,16 +1,13 @@
-use std::collections::HashMap;
-
 use assert_matches::assert_matches;
-use indexmap::indexmap;
 use pretty_assertions::assert_eq;
-use starknet_api::core::PatriciaKey;
+use starknet_api::api_core::PatriciaKey;
 use starknet_api::hash::StarkHash;
 use starknet_api::{patricia_key, stark_felt};
 
 use super::*;
+use crate::collections::HashMap;
 use crate::test_utils::{
-    deprecated_create_test_state, get_test_contract_class, DictStateReader, TEST_CLASS_HASH,
-    TEST_EMPTY_CONTRACT_CLASS_HASH,
+    create_test_state, get_test_contract_class, DictStateReader, TEST_CLASS_HASH,
 };
 
 fn set_initial_state_values(
@@ -69,7 +66,11 @@ fn get_and_set_storage_value() {
 
 #[test]
 fn cast_between_storage_mapping_types() {
-    let empty_map: IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt>> = IndexMap::default();
+    let empty_map: IndexMap<
+        ContractAddress,
+        IndexMap<StorageKey, StarkFelt, HasherBuilder>,
+        HasherBuilder,
+    > = IndexMap::default();
     assert_eq!(empty_map, IndexMap::from(StorageView::default()));
 
     let contract_address0 = ContractAddress(patricia_key!("0x100"));
@@ -86,9 +87,13 @@ fn cast_between_storage_mapping_types() {
         ((contract_address1, key0), storage_val2),
     ]));
 
-    let expected_indexed_map = IndexMap::from([
-        (contract_address0, indexmap!(key0 => storage_val0, key1 => storage_val1)),
-        (contract_address1, indexmap!(key0 => storage_val2)),
+    let expected_indexed_map: IndexMap<
+        ContractAddress,
+        IndexMap<StorageKey, StarkFelt, HasherBuilder>,
+        HasherBuilder,
+    > = IndexMap::from_iter([
+        (contract_address0, IndexMap::from_iter([(key0, storage_val0), (key1, storage_val1)])),
+        (contract_address1, IndexMap::from_iter([(key0, storage_val2)])),
     ]);
     assert_eq!(expected_indexed_map, IndexMap::from(storage_map));
 }
@@ -137,16 +142,16 @@ fn get_and_increment_nonce() {
 fn get_contract_class() {
     // Positive flow.
     let existing_class_hash = ClassHash(stark_felt!(TEST_CLASS_HASH));
-    let mut state = deprecated_create_test_state();
+    let mut state = create_test_state();
     assert_eq!(
-        state.get_compiled_contract_class(&existing_class_hash).unwrap(),
-        get_test_contract_class()
+        state.get_contract_class(&existing_class_hash).unwrap(),
+        Arc::from(get_test_contract_class())
     );
 
     // Negative flow.
     let missing_class_hash = ClassHash(stark_felt!("0x101"));
     assert_matches!(
-        state.get_compiled_contract_class(&missing_class_hash).unwrap_err(),
+        state.get_contract_class(&missing_class_hash).unwrap_err(),
         StateError::UndeclaredClassHash(undeclared) if undeclared == missing_class_hash
     );
 }
@@ -170,6 +175,22 @@ fn set_and_get_contract_hash() {
 }
 
 #[test]
+fn cannot_set_class_hash_to_deployed_address() {
+    let contract_address = ContractAddress(patricia_key!("0x1"));
+    let deployed_class_hash = ClassHash(stark_felt!("0x10"));
+    let mut state = CachedState::new(DictStateReader {
+        address_to_class_hash: HashMap::from([(contract_address, deployed_class_hash)]),
+        ..Default::default()
+    });
+
+    let new_class_hash = ClassHash(stark_felt!("0x100"));
+    assert_matches!(
+        state.set_class_hash_at(contract_address, new_class_hash).unwrap_err(),
+        StateError::UnavailableContractAddress(..)
+    );
+}
+
+#[test]
 fn cannot_set_class_hash_to_uninitialized_contract() {
     let mut state = CachedState::new(DictStateReader::default());
 
@@ -186,7 +207,8 @@ fn cached_state_state_diff_conversion() {
     // This will not appear in the diff, since this mapping is immutable for the current version we
     // are aligned with.
     let test_class_hash = ClassHash(stark_felt!(TEST_CLASS_HASH));
-    let class_hash_to_class = HashMap::from([(test_class_hash, get_test_contract_class())]);
+    let class_hash_to_class =
+        HashMap::from([(test_class_hash, Arc::from(get_test_contract_class()))]);
 
     let nonce_initial_values = HashMap::new();
 
@@ -228,11 +250,6 @@ fn cached_state_state_diff_conversion() {
         storage_initial_values,
     );
 
-    // Declare a new class.
-    let class_hash = ClassHash(stark_felt!(TEST_EMPTY_CONTRACT_CLASS_HASH));
-    let compiled_class_hash = CompiledClassHash(stark_felt!(1_u8));
-    state.set_compiled_class_hash(class_hash, compiled_class_hash).unwrap();
-
     // Write the initial value using key contract_address1.
     state.set_storage_at(contract_address1, key_y, storage_val1);
 
@@ -245,11 +262,16 @@ fn cached_state_state_diff_conversion() {
 
     // Only changes to contract_address2 should be shown, since contract_address_0 wasn't changed
     // and contract_address_1 was changed but ended up with the original values.
-    let expected_state_diff = CommitmentStateDiff {
-        address_to_class_hash: IndexMap::from_iter([(contract_address2, new_class_hash)]),
-        storage_updates: IndexMap::from_iter([(contract_address2, indexmap! {key_y => new_value})]),
-        class_hash_to_compiled_class_hash: IndexMap::from_iter([(class_hash, compiled_class_hash)]),
-        address_to_nonce: IndexMap::from_iter([(contract_address2, Nonce(StarkFelt::from(1_u64)))]),
+    let expected_state_diff = StateDiff {
+        deployed_contracts: IndexMap::from_iter([(contract_address2, new_class_hash)]),
+        storage_diffs: IndexMap::from_iter([(
+            contract_address2,
+            IndexMap::from_iter([(key_y, new_value)]),
+        )]),
+        declared_classes: IndexMap::with_hasher(HasherBuilder::default()),
+        deprecated_declared_classes: IndexMap::with_hasher(HasherBuilder::default()),
+        nonces: IndexMap::from_iter([(contract_address2, Nonce(StarkFelt::from(1_u64)))]),
+        replaced_classes: IndexMap::with_hasher(HasherBuilder::default()),
     };
 
     assert_eq!(expected_state_diff, state.to_state_diff());
