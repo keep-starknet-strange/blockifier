@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use blockifier::state::cached_state::CommitmentStateDiff;
 use indexmap::IndexMap;
 use pyo3::prelude::*;
-use starknet_api::core::{ClassHash, ContractAddress, Nonce};
+use starknet_api::api_core::{ClassHash, ContractAddress, Nonce};
 use starknet_api::state::{StateDiff, StorageKey};
 
 use crate::errors::{NativeBlockifierError, NativeBlockifierResult};

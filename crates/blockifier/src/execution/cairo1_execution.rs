@@ -3,11 +3,10 @@ use cairo_vm::types::relocatable::{MaybeRelocatable, Relocatable};
 use cairo_vm::vm::errors::vm_errors::VirtualMachineError;
 use cairo_vm::vm::runners::builtin_runner::SEGMENT_ARENA_BUILTIN_NAME;
 use cairo_vm::vm::runners::cairo_runner::{
-    CairoArg, CairoRunner, ExecutionResources as VmExecutionResources,
+    CairoArg, CairoRunner, ExecutionResources as VmExecutionResources, RunResources,
 };
 use cairo_vm::vm::vm_core::VirtualMachine;
 use starknet_api::hash::StarkFelt;
-use starknet_api::stark_felt;
 
 use crate::execution::contract_class::{ContractClassV1, EntryPointV1};
 use crate::execution::entry_point::{
@@ -23,6 +22,8 @@ use crate::execution::execution_utils::{
 };
 use crate::execution::syscalls::hint_processor::SyscallHintProcessor;
 use crate::state::state_api::State;
+use crate::stdlib::string::ToString;
+use crate::stdlib::vec::Vec;
 
 // TODO(spapini): Try to refactor this file into a StarknetRunner struct.
 
@@ -153,7 +154,7 @@ fn prepare_builtin_costs(
     // additional `ret` statement).
     let mut ptr = (vm.get_pc() + contract_class.bytecode_length())?;
     // Push a `ret` opcode.
-    write_stark_felt(vm, &mut ptr, stark_felt!("0x208b7fff7fff7ffe"))?;
+    write_stark_felt(vm, &mut ptr, StarkFelt::try_from("0x208b7fff7fff7ffe").unwrap())?;
     // Push a pointer to the builtin cost segment.
     write_maybe_relocatable(vm, &mut ptr, builtin_cost_segment_start)?;
 
@@ -221,13 +222,13 @@ pub fn run_entry_point(
     program_segment_size: usize,
 ) -> Result<(), VirtualMachineExecutionError> {
     // TODO(Dori,30/06/2023): propagate properly once VM allows it.
-    let run_resources = &mut None;
+    let mut run_resources = RunResources::default();
     let verify_secure = true;
     let args: Vec<&CairoArg> = args.iter().collect();
     runner.run_from_entrypoint(
         entry_point.pc(),
         &args,
-        run_resources,
+        &mut run_resources,
         verify_secure,
         Some(program_segment_size),
         vm,

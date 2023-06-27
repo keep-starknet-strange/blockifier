@@ -4,35 +4,48 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
+default = ["std"]
+std = [
+    "cairo-felt/std",
+    "cairo-vm/std",
+    "starknet_api/std",
+    "thiserror-no-std/std",
+    "num-bigint/std",
+]
 testing = []
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cairo-felt.workspace = true
-cairo-lang-casm.workspace = true
-cairo-lang-runner.workspace = true
-cairo-lang-starknet.workspace = true
-cairo-vm.workspace = true
-derive_more.workspace = true
-indexmap.workspace = true
-itertools.workspace = true
-log.workspace = true
-num-bigint.workspace = true
-num-integer.workspace = true
-num-traits.workspace = true
+cairo-felt = { workspace = true, features = ["alloc"] }
+cairo-vm = { workspace = true, features = ["cairo-1-hints"] }
+cairo-lang-casm = { workspace = true }
+cairo-lang-casm-contract-class = { workspace = true }
+cairo-lang-utils = { workspace = true }
+cairo-lang-vm-utils = { workspace = true, features = ["execute_core_hints"] }
+derive_more = { workspace = true, features = ["into_iterator", "from"] }
+indexmap = { workspace = true, features = ["serde"] }
+itertools = { workspace = true }
+num-bigint = { workspace = true }
+num-integer = { workspace = true }
+num-traits = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["arbitrary_precision"] }
-sha3.workspace = true
-starknet_api = { workspace = true, features = ["testing"] }
-starknet-crypto.workspace = true
-strum.workspace = true
-strum_macros.workspace = true
-thiserror.workspace = true
-phf.workspace = true
-ctor.workspace = true
+sha3 = { workspace = true }
+starknet_api = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+phf = { workspace = true }
+log = { workspace = true }
+hashbrown = { workspace = true }
+lazy_static = { workspace = true }
+thiserror-no-std = { workspace = true }
+starknet-crypto = { workspace = true }
+libm = { workspace = true }
+
 
 [dev-dependencies]
+starknet_api = { workspace = true, features = ["testing"] }
 assert_matches.workspace = true
 pretty_assertions.workspace = true
 test-case.workspace = true

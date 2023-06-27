@@ -1,6 +1,7 @@
+#![cfg(test)]
 use std::collections::HashMap;
 
-use starknet_api::core::{ClassHash, ContractAddress, PatriciaKey};
+use starknet_api::api_core::{ClassHash, ContractAddress, PatriciaKey};
 use starknet_api::hash::{StarkFelt, StarkHash};
 use starknet_api::state::StorageKey;
 use starknet_api::transaction::{Calldata, Fee, InvokeTransaction, TransactionSignature};
@@ -30,7 +31,7 @@ pub const CALL_CONTRACT: u64 = 2;
 pub fn create_account_tx_test_state(
     account_class_hash: &str,
     account_address: &str,
-    account_path: &str,
+    account_bytes: &[u8],
     erc20_account_balance_key: StorageKey,
     initial_account_balance: u128,
 ) -> CachedState<DictStateReader> {
@@ -40,7 +41,7 @@ pub fn create_account_tx_test_state(
     let test_account_class_hash = ClassHash(stark_felt!(account_class_hash));
     let test_erc20_class_hash = ClassHash(stark_felt!(TEST_ERC20_CONTRACT_CLASS_HASH));
     let class_hash_to_class = HashMap::from([
-        (test_account_class_hash, ContractClassV0::from_file(account_path).into()),
+        (test_account_class_hash, ContractClassV0::from_file(account_bytes).into()),
         (test_contract_class_hash, ContractClassV0::from_file(TEST_CONTRACT_PATH).into()),
         (test_erc20_class_hash, ContractClassV0::from_file(ERC20_CONTRACT_PATH).into()),
     ]);

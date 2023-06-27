@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use cairo_felt::Felt252;
 
 use crate::abi::constants;
@@ -9,6 +7,8 @@ use crate::fee::gas_usage::calculate_tx_gas_usage;
 use crate::fee::os_usage::get_additional_os_resources;
 use crate::state::cached_state::TransactionalState;
 use crate::state::state_api::StateReader;
+use crate::stdlib::collections::HashMap;
+use crate::stdlib::string::{String, ToString};
 use crate::transaction::errors::TransactionExecutionError;
 use crate::transaction::objects::{ResourcesMapping, TransactionExecutionResult};
 use crate::transaction::transaction_types::TransactionType;

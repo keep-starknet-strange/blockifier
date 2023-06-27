@@ -1,10 +1,9 @@
-use std::collections::HashSet;
-
 use cairo_vm::vm::runners::builtin_runner;
 use strum::IntoEnumIterator;
 
 use crate::execution::deprecated_syscalls::DeprecatedSyscallSelector;
 use crate::fee::os_usage::OS_RESOURCES;
+use crate::stdlib::collections::HashSet;
 use crate::transaction::transaction_types::TransactionType;
 
 #[test]

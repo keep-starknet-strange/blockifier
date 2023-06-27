@@ -1,11 +1,13 @@
-use starknet_api::core::{ClassHash, ContractAddress, Nonce};
+use starknet_api::api_core::{ClassHash, ContractAddress, Nonce};
 use starknet_api::hash::StarkFelt;
 use starknet_api::transaction::{Fee, TransactionVersion};
 use starknet_api::StarknetApiError;
-use thiserror::Error;
+use thiserror_no_std::Error;
 
 use crate::execution::errors::EntryPointExecutionError;
 use crate::state::errors::StateError;
+use crate::stdlib::string::String;
+use crate::stdlib::vec::Vec;
 
 #[derive(Debug, Error)]
 pub enum TransactionExecutionError {

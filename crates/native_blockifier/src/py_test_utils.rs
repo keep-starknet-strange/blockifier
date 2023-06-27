@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use blockifier::execution::contract_class::ContractClassV0;
 use blockifier::state::cached_state::CachedState;
 use blockifier::test_utils::DictStateReader;
-use starknet_api::core::ClassHash;
+use starknet_api::api_core::ClassHash;
 use starknet_api::hash::StarkFelt;
 use starknet_api::stark_felt;
 

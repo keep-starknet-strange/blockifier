@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-use std::ops::Shl;
-use std::rc::Rc;
+use core::ops::Shl;
 
 use cairo_felt::{Felt252, PRIME_STR};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
@@ -21,6 +19,10 @@ use num_traits::{Num, One, Zero};
 use crate::execution::hint_code::{
     NORMALIZE_ADDRESS_SET_IS_250_HINT, NORMALIZE_ADDRESS_SET_IS_SMALL_HINT,
 };
+use crate::stdlib::boxed::Box;
+use crate::stdlib::collections::HashMap;
+use crate::stdlib::rc::Rc;
+use crate::stdlib::string::{String, ToString};
 
 pub type HintExecutionResult = Result<(), HintError>;
 

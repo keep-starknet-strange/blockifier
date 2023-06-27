@@ -1,11 +1,6 @@
-use std::collections::HashMap;
-use std::ops::Deref;
-use std::sync::Arc;
-
 use cairo_felt::Felt252;
-use cairo_lang_casm;
 use cairo_lang_casm::hints::Hint;
-use cairo_lang_starknet::casm_contract_class::{CasmContractClass, CasmContractEntryPoint};
+use cairo_lang_casm_contract_class::{CasmContractClass, CasmContractEntryPoint};
 use cairo_vm::serde::deserialize_program::{
     ApTracking, BuiltinName, FlowTrackingData, HintParams, ReferenceManager,
 };
@@ -16,7 +11,7 @@ use cairo_vm::vm::runners::builtin_runner::{HASH_BUILTIN_NAME, POSEIDON_BUILTIN_
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources as VmExecutionResources;
 use serde::de::Error as DeserializationError;
 use serde::{Deserialize, Deserializer};
-use starknet_api::core::EntryPointSelector;
+use starknet_api::api_core::EntryPointSelector;
 use starknet_api::deprecated_contract_class::{
     ContractClass as DeprecatedContractClass, EntryPoint, EntryPointOffset, EntryPointType,
     Program as DeprecatedProgram,
@@ -25,6 +20,11 @@ use starknet_api::deprecated_contract_class::{
 use crate::abi::constants;
 use crate::execution::errors::PreExecutionError;
 use crate::execution::execution_utils::{felt_to_stark_felt, sn_api_to_cairo_vm_program};
+use crate::stdlib::collections::HashMap;
+use crate::stdlib::ops::Deref;
+use crate::stdlib::string::{String, ToString};
+use crate::stdlib::sync::Arc;
+use crate::stdlib::vec::Vec;
 
 /// Represents a runnable StarkNet contract class (meaning, the program is runnable by the VM).
 /// We wrap the actual class in an Arc to avoid cloning the program when cloning the class.

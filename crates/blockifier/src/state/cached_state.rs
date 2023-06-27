@@ -1,14 +1,18 @@
-use std::collections::{HashMap, HashSet};
+#[cfg(feature = "std")]
+use std::collections::hash_map::RandomState as HasherBuilder;
 
 use derive_more::IntoIterator;
+#[cfg(not(feature = "std"))]
+use hashbrown::hash_map::DefaultHashBuilder as HasherBuilder;
 use indexmap::IndexMap;
-use starknet_api::core::{ClassHash, CompiledClassHash, ContractAddress, Nonce};
+use starknet_api::api_core::{ClassHash, CompiledClassHash, ContractAddress, Nonce};
 use starknet_api::hash::StarkFelt;
 use starknet_api::state::StorageKey;
 
 use crate::execution::contract_class::ContractClass;
 use crate::state::errors::StateError;
 use crate::state::state_api::{State, StateReader, StateResult};
+use crate::stdlib::collections::{HashMap, HashSet};
 use crate::utils::subtract_mappings;
 
 #[cfg(test)]
@@ -22,12 +26,13 @@ pub type TransactionalState<'a, S> = CachedState<MutRefState<'a, CachedState<S>>
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CommitmentStateDiff {
     // Contract instance attributes (per address).
-    pub address_to_class_hash: IndexMap<ContractAddress, ClassHash>,
-    pub address_to_nonce: IndexMap<ContractAddress, Nonce>,
-    pub storage_updates: IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt>>,
+    pub address_to_class_hash: IndexMap<ContractAddress, ClassHash, HasherBuilder>,
+    pub address_to_nonce: IndexMap<ContractAddress, Nonce, HasherBuilder>,
+    pub storage_updates:
+        IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt, HasherBuilder>, HasherBuilder>,
 
     // Global attributes.
-    pub class_hash_to_compiled_class_hash: IndexMap<ClassHash, CompiledClassHash>,
+    pub class_hash_to_compiled_class_hash: IndexMap<ClassHash, CompiledClassHash, HasherBuilder>,
 }
 
 /// Caches read and write requests.
@@ -189,7 +194,11 @@ impl<S: StateReader> State for CachedState<S> {
     }
 
     fn to_state_diff(&self) -> CommitmentStateDiff {
-        type StorageDiff = IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt>>;
+        type StorageDiff = IndexMap<
+            ContractAddress,
+            IndexMap<StorageKey, StarkFelt, HasherBuilder>,
+            HasherBuilder,
+        >;
 
         let state_cache = &self.cache;
         let class_hash_updates = state_cache.get_class_hash_updates();
@@ -213,16 +222,18 @@ pub type ContractStorageKey = (ContractAddress, StorageKey);
 pub struct StorageView(pub HashMap<ContractStorageKey, StarkFelt>);
 
 /// Converts a `CachedState`'s storage mapping into a `StateDiff`'s storage mapping.
-impl From<StorageView> for IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt>> {
+impl From<StorageView>
+    for IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt, HasherBuilder>, HasherBuilder>
+{
     fn from(storage_view: StorageView) -> Self {
-        let mut storage_updates = Self::new();
+        let mut storage_updates = Self::with_capacity_and_hasher(0, HasherBuilder::default());
         for ((address, key), value) in storage_view.into_iter() {
             storage_updates
                 .entry(address)
                 .and_modify(|map| {
                     map.insert(key, value);
                 })
-                .or_insert_with(|| IndexMap::from([(key, value)]));
+                .or_insert_with(|| IndexMap::from_iter([(key, value)]));
         }
 
         storage_updates

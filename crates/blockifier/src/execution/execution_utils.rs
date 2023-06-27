@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
 use cairo_felt::Felt252;
-use cairo_lang_runner::short_string::as_cairo_short_string;
+use cairo_lang_utils::short_string::as_cairo_short_string;
 use cairo_vm::serde::deserialize_program::{
     deserialize_array_of_bigint_hex, Attribute, HintParams, Identifier, ReferenceManager,
 };
@@ -12,7 +10,7 @@ use cairo_vm::vm::errors::memory_errors::MemoryError;
 use cairo_vm::vm::errors::vm_errors::VirtualMachineError;
 use cairo_vm::vm::runners::cairo_runner::CairoArg;
 use cairo_vm::vm::vm_core::VirtualMachine;
-use starknet_api::core::ClassHash;
+use starknet_api::api_core::ClassHash;
 use starknet_api::deprecated_contract_class::Program as DeprecatedProgram;
 use starknet_api::hash::StarkFelt;
 use starknet_api::transaction::Calldata;
@@ -26,6 +24,10 @@ use crate::execution::errors::PostExecutionError;
 use crate::execution::{cairo1_execution, deprecated_execution};
 use crate::state::errors::StateError;
 use crate::state::state_api::State;
+use crate::stdlib::boxed::Box;
+use crate::stdlib::collections::HashMap;
+use crate::stdlib::string::{String, ToString};
+use crate::stdlib::vec::Vec;
 
 pub type Args = Vec<CairoArg>;
 

@@ -1,12 +1,9 @@
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
-
 use assert_matches::assert_matches;
 use cairo_vm::vm::runners::builtin_runner::{HASH_BUILTIN_NAME, RANGE_CHECK_BUILTIN_NAME};
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources as VmExecutionResources;
 use itertools::concat;
 use pretty_assertions::assert_eq;
-use starknet_api::core::{ClassHash, ContractAddress, Nonce, PatriciaKey};
+use starknet_api::api_core::{ClassHash, ContractAddress, Nonce, PatriciaKey};
 use starknet_api::deprecated_contract_class::EntryPointType;
 use starknet_api::hash::{StarkFelt, StarkHash};
 use starknet_api::state::StorageKey;
@@ -31,6 +28,9 @@ use crate::retdata;
 use crate::state::cached_state::CachedState;
 use crate::state::errors::StateError;
 use crate::state::state_api::{State, StateReader};
+use crate::stdlib::collections::{HashMap, HashSet};
+use crate::stdlib::string::ToString;
+use crate::stdlib::sync::Arc;
 use crate::test_utils::{
     test_erc20_account_balance_key, test_erc20_sequencer_balance_key, DictStateReader, BALANCE,
     MAX_FEE, TEST_ACCOUNT_CONTRACT_ADDRESS, TEST_ACCOUNT_CONTRACT_CLASS_HASH, TEST_CLASS_HASH,

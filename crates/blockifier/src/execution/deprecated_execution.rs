@@ -1,10 +1,10 @@
 use cairo_vm::types::relocatable::{MaybeRelocatable, Relocatable};
 use cairo_vm::vm::errors::vm_errors::VirtualMachineError;
 use cairo_vm::vm::runners::cairo_runner::{
-    CairoArg, CairoRunner, ExecutionResources as VmExecutionResources,
+    CairoArg, CairoRunner, ExecutionResources as VmExecutionResources, RunResources,
 };
 use cairo_vm::vm::vm_core::VirtualMachine;
-use starknet_api::core::EntryPointSelector;
+use starknet_api::api_core::EntryPointSelector;
 use starknet_api::hash::{StarkFelt, StarkHash};
 
 use crate::abi::constants::DEFAULT_ENTRY_POINT_SELECTOR;
@@ -21,6 +21,8 @@ use crate::execution::execution_utils::{
     read_execution_retdata, stark_felt_to_felt, Args, ReadOnlySegments,
 };
 use crate::state::state_api::State;
+use crate::stdlib::string::ToString;
+use crate::stdlib::vec::Vec;
 
 pub struct VmExecutionContext<'a> {
     pub runner: CairoRunner,
@@ -189,14 +191,14 @@ pub fn run_entry_point(
     args: Args,
 ) -> Result<(), VirtualMachineExecutionError> {
     // TODO(Dori,30/06/2023): propagate properly once VM allows it.
-    let run_resources = &mut None;
+    let mut run_resources = RunResources::default();
     let verify_secure = true;
     let program_segment_size = None; // Infer size from program.
     let args: Vec<&CairoArg> = args.iter().collect();
     runner.run_from_entrypoint(
         entry_point_pc,
         &args,
-        run_resources,
+        &mut run_resources,
         verify_secure,
         program_segment_size,
         vm,

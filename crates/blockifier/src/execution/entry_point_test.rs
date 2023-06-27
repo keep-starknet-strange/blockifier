@@ -1,8 +1,6 @@
-use std::collections::HashSet;
-
 use num_bigint::BigInt;
 use pretty_assertions::assert_eq;
-use starknet_api::core::{EntryPointSelector, PatriciaKey};
+use starknet_api::api_core::{EntryPointSelector, PatriciaKey};
 use starknet_api::hash::{StarkFelt, StarkHash};
 use starknet_api::state::StorageKey;
 use starknet_api::transaction::Calldata;
@@ -13,6 +11,8 @@ use crate::execution::entry_point::{CallEntryPoint, CallExecution, CallInfo, Ret
 use crate::execution::errors::EntryPointExecutionError;
 use crate::retdata;
 use crate::state::cached_state::CachedState;
+use crate::stdlib::collections::HashSet;
+use crate::stdlib::string::ToString;
 use crate::test_utils::{
     create_test_state, deprecated_create_test_state, pad_address_to_64,
     trivial_external_entry_point, trivial_external_entry_point_security_test, DictStateReader,

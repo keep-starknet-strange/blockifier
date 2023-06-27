@@ -1,0 +1,16 @@
+[package]
+name = "ensure_no_std"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+blockifier = { path = "../crates/blockifier", default-features = false }
+
+wee_alloc = "0.4.5"
+
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

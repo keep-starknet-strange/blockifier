@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use starknet_api::core::{
+use starknet_api::api_core::{
     calculate_contract_address, ClassHash, ContractAddress, Nonce, PatriciaKey,
 };
 use starknet_api::hash::{StarkFelt, StarkHash};
@@ -16,6 +14,7 @@ use crate::block_context::BlockContext;
 use crate::execution::contract_class::ContractClassV0;
 use crate::state::cached_state::CachedState;
 use crate::state::state_api::{State, StateReader};
+use crate::stdlib::collections::HashMap;
 use crate::test_utils::{
     declare_tx, deploy_account_tx, invoke_tx, DictStateReader, ACCOUNT_CONTRACT_PATH, BALANCE,
     ERC20_CONTRACT_PATH, MAX_FEE, TEST_ACCOUNT_CONTRACT_CLASS_HASH, TEST_CLASS_HASH,

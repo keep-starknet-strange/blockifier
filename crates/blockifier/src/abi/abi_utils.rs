@@ -1,7 +1,7 @@
 use cairo_felt::Felt252;
 use num_integer::Integer;
 use sha3::{Digest, Keccak256};
-use starknet_api::core::{
+use starknet_api::api_core::{
     ContractAddress, EntryPointSelector, PatriciaKey, L2_ADDRESS_UPPER_BOUND,
 };
 use starknet_api::hash::{pedersen_hash, StarkFelt, StarkHash};

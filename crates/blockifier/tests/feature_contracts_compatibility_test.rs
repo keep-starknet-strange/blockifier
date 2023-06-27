@@ -1,3 +1,4 @@
+#![cfg(feature = "test")]
 use std::fs;
 use std::process::Command;
 

@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-
 use assert_matches::assert_matches;
-use indexmap::indexmap;
 use pretty_assertions::assert_eq;
-use starknet_api::core::PatriciaKey;
+use starknet_api::api_core::PatriciaKey;
 use starknet_api::hash::StarkHash;
 use starknet_api::{patricia_key, stark_felt};
 
 use super::*;
+use crate::stdlib::collections::HashMap;
 use crate::test_utils::{
     deprecated_create_test_state, get_test_contract_class, DictStateReader, TEST_CLASS_HASH,
     TEST_EMPTY_CONTRACT_CLASS_HASH,
@@ -69,7 +67,11 @@ fn get_and_set_storage_value() {
 
 #[test]
 fn cast_between_storage_mapping_types() {
-    let empty_map: IndexMap<ContractAddress, IndexMap<StorageKey, StarkFelt>> = IndexMap::default();
+    let empty_map: IndexMap<
+        ContractAddress,
+        IndexMap<StorageKey, StarkFelt, HasherBuilder>,
+        HasherBuilder,
+    > = IndexMap::default();
     assert_eq!(empty_map, IndexMap::from(StorageView::default()));
 
     let contract_address0 = ContractAddress(patricia_key!("0x100"));
@@ -86,9 +88,13 @@ fn cast_between_storage_mapping_types() {
         ((contract_address1, key0), storage_val2),
     ]));
 
-    let expected_indexed_map = IndexMap::from([
-        (contract_address0, indexmap!(key0 => storage_val0, key1 => storage_val1)),
-        (contract_address1, indexmap!(key0 => storage_val2)),
+    let expected_indexed_map: IndexMap<
+        ContractAddress,
+        IndexMap<StorageKey, StarkFelt, HasherBuilder>,
+        HasherBuilder,
+    > = IndexMap::from_iter([
+        (contract_address0, IndexMap::from_iter([(key0, storage_val0), (key1, storage_val1)])),
+        (contract_address1, IndexMap::from_iter([(key0, storage_val2)])),
     ]);
     assert_eq!(expected_indexed_map, IndexMap::from(storage_map));
 }
@@ -247,7 +253,10 @@ fn cached_state_state_diff_conversion() {
     // and contract_address_1 was changed but ended up with the original values.
     let expected_state_diff = CommitmentStateDiff {
         address_to_class_hash: IndexMap::from_iter([(contract_address2, new_class_hash)]),
-        storage_updates: IndexMap::from_iter([(contract_address2, indexmap! {key_y => new_value})]),
+        storage_updates: IndexMap::from_iter([(
+            contract_address2,
+            IndexMap::from_iter([(key_y, new_value)]),
+        )]),
         class_hash_to_compiled_class_hash: IndexMap::from_iter([(class_hash, compiled_class_hash)]),
         address_to_nonce: IndexMap::from_iter([(contract_address2, Nonce(StarkFelt::from(1_u64)))]),
     };

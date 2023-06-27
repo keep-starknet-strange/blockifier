@@ -1,3 +1,4 @@
+#![cfg(feature = "test")]
 use std::collections::{HashMap, HashSet};
 
 use assert_matches::assert_matches;
@@ -6,7 +7,7 @@ use cairo_vm::vm::runners::builtin_runner::RANGE_CHECK_BUILTIN_NAME;
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources as VmExecutionResources;
 use itertools::concat;
 use pretty_assertions::assert_eq;
-use starknet_api::core::{calculate_contract_address, ClassHash, ContractAddress, PatriciaKey};
+use starknet_api::api_core::{calculate_contract_address, ClassHash, ContractAddress, PatriciaKey};
 use starknet_api::hash::{StarkFelt, StarkHash};
 use starknet_api::state::StorageKey;
 use starknet_api::transaction::{

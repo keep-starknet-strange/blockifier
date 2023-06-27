@@ -5,8 +5,8 @@ use cairo_lang_starknet::casm_contract_class::CasmContractClass;
 use papyrus_storage::compiled_class::CasmStorageReader;
 use papyrus_storage::db::RO;
 use papyrus_storage::StorageResult;
+use starknet_api::api_core::{ClassHash, CompiledClassHash, ContractAddress, Nonce};
 use starknet_api::block::BlockNumber;
-use starknet_api::core::{ClassHash, CompiledClassHash, ContractAddress, Nonce};
 use starknet_api::hash::StarkFelt;
 use starknet_api::state::{StateNumber, StorageKey};
 

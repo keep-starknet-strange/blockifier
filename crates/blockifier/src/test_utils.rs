@@ -1,16 +1,15 @@
-use std::collections::HashMap;
-use std::fs;
-use std::path::PathBuf;
+#![cfg(test)]
+use core::str::from_utf8;
 
 use cairo_vm::vm::runners::builtin_runner::{
     BITWISE_BUILTIN_NAME, EC_OP_BUILTIN_NAME, HASH_BUILTIN_NAME, OUTPUT_BUILTIN_NAME,
     POSEIDON_BUILTIN_NAME, RANGE_CHECK_BUILTIN_NAME, SIGNATURE_BUILTIN_NAME,
 };
-use starknet_api::block::{BlockNumber, BlockTimestamp};
-use starknet_api::core::{
+use starknet_api::api_core::{
     calculate_contract_address, ChainId, ClassHash, CompiledClassHash, ContractAddress,
     EntryPointSelector, Nonce, PatriciaKey,
 };
+use starknet_api::block::{BlockNumber, BlockTimestamp};
 use starknet_api::deprecated_contract_class::{
     ContractClass as DeprecatedContractClass, EntryPointType,
 };
@@ -33,6 +32,8 @@ use crate::execution::entry_point::{
 use crate::state::cached_state::{CachedState, ContractClassMapping, ContractStorageKey};
 use crate::state::errors::StateError;
 use crate::state::state_api::{State, StateReader, StateResult};
+use crate::stdlib::collections::HashMap;
+use crate::stdlib::string::{String, ToString};
 use crate::transaction::objects::AccountTransactionContext;
 
 // Addresses.
@@ -55,22 +56,24 @@ pub const SECURITY_TEST_CLASS_HASH: &str = "0x114";
 pub const TEST_ERC20_CONTRACT_CLASS_HASH: &str = "0x1010";
 
 // Paths.
-pub const ACCOUNT_CONTRACT_PATH: &str =
-    "./feature_contracts/cairo0/compiled/account_without_validations_compiled.json";
-pub const TEST_CONTRACT_PATH: &str =
-    "./feature_contracts/cairo0/compiled/test_contract_compiled.json";
-pub const TEST_CONTRACT_CAIRO1_PATH: &str =
-    "./feature_contracts/cairo1/compiled/test_contract.casm.json";
-pub const SECURITY_TEST_CONTRACT_PATH: &str =
-    "./feature_contracts/cairo0/compiled/security_tests_contract_compiled.json";
-pub const TEST_EMPTY_CONTRACT_PATH: &str =
-    "./feature_contracts/cairo0/compiled/empty_contract_compiled.json";
-pub const TEST_EMPTY_CONTRACT_CAIRO1_PATH: &str =
-    "./feature_contracts/cairo1/compiled/empty_contract.casm.json";
-pub const TEST_FAULTY_ACCOUNT_CONTRACT_PATH: &str =
-    "./feature_contracts/cairo0/compiled/account_faulty_compiled.json";
-pub const ERC20_CONTRACT_PATH: &str =
-    "./ERC20_without_some_syscalls/ERC20/erc20_contract_without_some_syscalls_compiled.json";
+pub const ACCOUNT_CONTRACT_PATH: &[u8] = include_bytes!(
+    "../feature_contracts/cairo0/compiled/account_without_validations_compiled.json"
+);
+pub const TEST_CONTRACT_PATH: &[u8] =
+    include_bytes!("../feature_contracts/cairo0/compiled/test_contract_compiled.json");
+pub const TEST_CONTRACT_CAIRO1_PATH: &[u8] =
+    include_bytes!("../feature_contracts/cairo1/compiled/test_contract.casm.json");
+pub const SECURITY_TEST_CONTRACT_PATH: &[u8] =
+    include_bytes!("../feature_contracts/cairo0/compiled/security_tests_contract_compiled.json");
+pub const TEST_EMPTY_CONTRACT_PATH: &[u8] =
+    include_bytes!("../feature_contracts/cairo0/compiled/empty_contract_compiled.json");
+pub const TEST_EMPTY_CONTRACT_CAIRO1_PATH: &[u8] =
+    include_bytes!("../feature_contracts/cairo1/compiled/empty_contract.casm.json");
+pub const TEST_FAULTY_ACCOUNT_CONTRACT_PATH: &[u8] =
+    include_bytes!("../feature_contracts/cairo0/compiled/account_faulty_compiled.json");
+pub const ERC20_CONTRACT_PATH: &[u8] = include_bytes!(
+    "../ERC20_without_some_syscalls/ERC20/erc20_contract_without_some_syscalls_compiled.json"
+);
 
 // Storage keys.
 pub fn test_erc20_sequencer_balance_key() -> StorageKey {
@@ -139,7 +142,7 @@ impl StateReader for DictStateReader {
     fn get_compiled_class_hash(
         &mut self,
         class_hash: ClassHash,
-    ) -> StateResult<starknet_api::core::CompiledClassHash> {
+    ) -> StateResult<starknet_api::api_core::CompiledClassHash> {
         let compiled_class_hash =
             self.class_hash_to_compiled_class_hash.get(&class_hash).copied().unwrap_or_default();
         Ok(compiled_class_hash)
@@ -151,15 +154,8 @@ pub fn pad_address_to_64(address: &str) -> String {
     String::from("0x") + format!("{trimmed_address:0>64}").as_str()
 }
 
-pub fn get_raw_contract_class(contract_path: &str) -> String {
-    let path: PathBuf = [env!("CARGO_MANIFEST_DIR"), contract_path].iter().collect();
-    fs::read_to_string(path).unwrap()
-}
-
-pub fn get_deprecated_contract_class(contract_path: &str) -> DeprecatedContractClass {
-    let path: PathBuf = [env!("CARGO_MANIFEST_DIR"), contract_path].iter().collect();
-    let contract = fs::read_to_string(path).unwrap();
-    let mut raw_contract_class: serde_json::Value = serde_json::from_str(&contract).unwrap();
+pub fn get_deprecated_contract_class(contract: &'static [u8]) -> DeprecatedContractClass {
+    let mut raw_contract_class: serde_json::Value = serde_json::from_slice(contract).unwrap();
 
     // ABI is not required for execution.
     raw_contract_class
@@ -423,15 +419,15 @@ pub fn declare_tx(
 // Contract loaders.
 
 impl ContractClassV0 {
-    pub fn from_file(contract_path: &str) -> ContractClassV0 {
-        let raw_contract_class = get_raw_contract_class(contract_path);
-        Self::try_from_json_string(&raw_contract_class).unwrap()
+    pub fn from_file(contract: &[u8]) -> ContractClassV0 {
+        let raw_contract_class = from_utf8(contract).unwrap();
+        Self::try_from_json_string(raw_contract_class).unwrap()
     }
 }
 
 impl ContractClassV1 {
-    pub fn from_file(contract_path: &str) -> ContractClassV1 {
-        let raw_contract_class = get_raw_contract_class(contract_path);
-        Self::try_from_json_string(&raw_contract_class).unwrap()
+    pub fn from_file(contract: &[u8]) -> ContractClassV1 {
+        let raw_contract_class = from_utf8(contract).unwrap();
+        Self::try_from_json_string(raw_contract_class).unwrap()
     }
 }

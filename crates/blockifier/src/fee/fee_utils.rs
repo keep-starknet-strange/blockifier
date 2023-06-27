@@ -1,12 +1,12 @@
-use std::collections::HashSet;
-
+use libm::ceil;
 use starknet_api::transaction::Fee;
 
 use crate::abi::constants;
 use crate::block_context::BlockContext;
+use crate::stdlib::collections::HashSet;
+use crate::stdlib::string::String;
 use crate::transaction::errors::TransactionExecutionError;
 use crate::transaction::objects::{ResourcesMapping, TransactionExecutionResult};
-
 #[cfg(test)]
 #[path = "fee_test.rs"]
 pub mod test;
@@ -55,5 +55,5 @@ pub fn calculate_tx_fee(
     let l1_gas_by_vm_usage = calculate_l1_gas_by_vm_usage(block_context, &vm_resources)?;
     let total_l1_gas_usage = l1_gas_usage as f64 + l1_gas_by_vm_usage;
 
-    Ok(Fee(total_l1_gas_usage.ceil() as u128 * block_context.gas_price))
+    Ok(Fee(ceil(total_l1_gas_usage) as u128 * block_context.gas_price))
 }
