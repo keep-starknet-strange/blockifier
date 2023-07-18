@@ -12,17 +12,19 @@ std = [
     "thiserror-no-std/std",
     "num-bigint/std",
 ]
-testing = []
+testing = ["parity-scale-codec"]
 parity-scale-codec = [
     "dep:parity-scale-codec",
     "dep:scale-info",
+    "starknet_api/parity-scale-codec",
+    "cairo-vm/parity-scale-codec",
 ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 cairo-felt = { workspace = true, features = ["alloc"] }
-cairo-vm = { workspace = true, features = ["cairo-1-hints", "parity-scale-codec"] }
+cairo-vm = { workspace = true, features = ["cairo-1-hints"] }
 cairo-lang-casm = { workspace = true }
 cairo-lang-casm-contract-class = { workspace = true }
 cairo-lang-utils = { workspace = true }
@@ -40,7 +42,7 @@ scale-info = { workspace = true, optional = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["arbitrary_precision"] }
 sha3 = { workspace = true }
-starknet_api = { workspace = true }
+starknet_api = { git = "https://github.com/m-kus/starknet-api", branch = "tdelabro/no_std-support" }
 strum = { workspace = true }
 strum_macros = { workspace = true }
 phf = { workspace = true }
@@ -52,7 +54,7 @@ starknet-crypto = { workspace = true }
 libm = { workspace = true }
 
 [dev-dependencies]
-starknet_api = { workspace = true, features = ["testing"] }
+starknet_api = { git = "https://github.com/m-kus/starknet-api", branch = "tdelabro/no_std-support", features = ["testing"] }
 assert_matches.workspace = true
 pretty_assertions.workspace = true
 test-case.workspace = true
