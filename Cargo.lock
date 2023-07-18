@@ -162,10 +162,10 @@ name = "blockifier"
 version = "0.1.0"
 dependencies = [
  "assert_matches",
- "cairo-felt 0.6.0 (git+https://github.com/keep-starknet-strange/cairo-rs.git?branch=no_std-support-with-cairo-1)",
- "cairo-lang-casm 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support)",
- "cairo-lang-casm-contract-class 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support)",
- "cairo-lang-utils 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support)",
+ "cairo-felt",
+ "cairo-lang-casm",
+ "cairo-lang-casm-contract-class",
+ "cairo-lang-utils",
  "cairo-lang-vm-utils",
  "cairo-vm",
  "derive_more",
@@ -225,38 +225,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "cairo-felt"
-version = "0.6.0"
-source = "git+https://github.com/keep-starknet-strange/cairo-rs?branch=tdelabro/no_std-support-with-cairo-1#5c513d4b54cf4a6e5f8e9e6adeff549b48e0a0af"
-dependencies = [
- "lazy_static",
- "num-bigint",
- "num-integer",
- "num-traits",
- "serde",
-]
-
-[[package]]
 name = "cairo-lang-casm"
 version = "2.0.0-rc2"
 source = "git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support#64ef5864c5b92ee40b46ecb0b6fd854bd790938d"
 dependencies = [
- "cairo-lang-utils 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support)",
- "hashbrown 0.14.0",
- "indoc",
- "num-bigint",
- "num-traits",
- "parity-scale-codec",
- "parity-scale-codec-derive",
- "serde",
-]
-
-[[package]]
-name = "cairo-lang-casm"
-version = "2.0.0-rc2"
-source = "git+https://github.com/keep-starknet-strange/cairo?branch=tdelabro/no_std-support#127a23dd0cf4d30a4fa678bb1aad76e3c926b10e"
-dependencies = [
- "cairo-lang-utils 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo?branch=tdelabro/no_std-support)",
+ "cairo-lang-utils",
  "hashbrown 0.14.0",
  "indoc",
  "num-bigint",
@@ -271,19 +244,8 @@ name = "cairo-lang-casm-contract-class"
 version = "2.0.0-rc2"
 source = "git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support#64ef5864c5b92ee40b46ecb0b6fd854bd790938d"
 dependencies = [
- "cairo-lang-casm 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support)",
- "cairo-lang-utils 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support)",
- "num-bigint",
- "serde",
-]
-
-[[package]]
-name = "cairo-lang-casm-contract-class"
-version = "2.0.0-rc2"
-source = "git+https://github.com/keep-starknet-strange/cairo?branch=tdelabro/no_std-support#127a23dd0cf4d30a4fa678bb1aad76e3c926b10e"
-dependencies = [
- "cairo-lang-casm 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo?branch=tdelabro/no_std-support)",
- "cairo-lang-utils 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo?branch=tdelabro/no_std-support)",
+ "cairo-lang-casm",
+ "cairo-lang-utils",
  "num-bigint",
  "serde",
 ]
@@ -293,23 +255,7 @@ name = "cairo-lang-utils"
 version = "2.0.0-rc2"
 source = "git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support#64ef5864c5b92ee40b46ecb0b6fd854bd790938d"
 dependencies = [
- "cairo-felt 0.6.0 (git+https://github.com/keep-starknet-strange/cairo-rs.git?branch=no_std-support-with-cairo-1)",
- "hashbrown 0.14.0",
- "indexmap 2.0.0",
- "itertools",
- "num-bigint",
- "num-integer",
- "num-traits",
- "parity-scale-codec",
- "serde",
-]
-
-[[package]]
-name = "cairo-lang-utils"
-version = "2.0.0-rc2"
-source = "git+https://github.com/keep-starknet-strange/cairo?branch=tdelabro/no_std-support#127a23dd0cf4d30a4fa678bb1aad76e3c926b10e"
-dependencies = [
- "cairo-felt 0.6.0 (git+https://github.com/keep-starknet-strange/cairo-rs?branch=tdelabro/no_std-support-with-cairo-1)",
+ "cairo-felt",
  "hashbrown 0.14.0",
  "indexmap 2.0.0",
  "itertools",
@@ -327,9 +273,9 @@ source = "git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-s
 dependencies = [
  "ark-ff",
  "ark-std 0.3.0",
- "cairo-felt 0.6.0 (git+https://github.com/keep-starknet-strange/cairo-rs.git?branch=no_std-support-with-cairo-1)",
- "cairo-lang-casm 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support)",
- "cairo-lang-utils 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support)",
+ "cairo-felt",
+ "cairo-lang-casm",
+ "cairo-lang-utils",
  "cairo-vm",
  "hashbrown 0.14.0",
  "num-bigint",
@@ -355,9 +301,9 @@ dependencies = [
  "ark-std 0.3.0",
  "bincode",
  "bitvec",
- "cairo-felt 0.6.0 (git+https://github.com/keep-starknet-strange/cairo-rs.git?branch=no_std-support-with-cairo-1)",
- "cairo-lang-casm 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support)",
- "cairo-lang-casm-contract-class 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo.git?branch=no_std-support)",
+ "cairo-felt",
+ "cairo-lang-casm",
+ "cairo-lang-casm-contract-class",
  "cairo-take_until_unbalanced",
  "generic-array",
  "hashbrown 0.13.2",
@@ -1161,9 +1107,9 @@ dependencies = [
 [[package]]
 name = "starknet_api"
 version = "0.1.0"
-source = "git+https://github.com/m-kus/starknet-api?branch=tdelabro/no_std-support#2445ed487aca58c2a0a12acd2af28877b68526bf"
+source = "git+https://github.com/m-kus/starknet-api?branch=no_std-support#c04329e2d4c15320f0dd4797b622c6c2de55dc17"
 dependencies = [
- "cairo-lang-casm-contract-class 2.0.0-rc2 (git+https://github.com/keep-starknet-strange/cairo?branch=tdelabro/no_std-support)",
+ "cairo-lang-casm-contract-class",
  "derive_more",
  "hashbrown 0.13.2",
  "hex",
