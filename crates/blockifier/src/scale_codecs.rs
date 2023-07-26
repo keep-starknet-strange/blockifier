@@ -1,8 +1,10 @@
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
 use parity_scale_codec::{Decode, Encode, EncodeAsRef};
-use std::collections::HashSet;
-use std::hash::Hash;
-use std::iter::FromIterator;
+use core::hash::Hash;
+
+use crate::stdlib::collections::HashSet;
+use crate::stdlib::vec::Vec;
+use crate::stdlib::string::String;
 
 #[derive(Encode, Decode)]
 pub struct USizeCodec(u64);
@@ -28,9 +30,9 @@ pub struct HashSetCodec<T>(Vec<T>)
 where
     T: Encode + Decode;
 
-impl<T: Encode + Decode + Clone + Eq + Hash> From<HashSetCodec<T>> for HashSet<T> {
+impl<T: Encode + Decode + Eq + Hash> From<HashSetCodec<T>> for HashSet<T> {
     fn from(value: HashSetCodec<T>) -> Self {
-        Self::from_iter(value.0.iter().cloned())
+        value.0.into_iter().collect()
     }
 }
 
