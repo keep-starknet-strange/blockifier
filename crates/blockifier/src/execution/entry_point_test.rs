@@ -556,8 +556,17 @@ Unknown location (pc=0:62)
 #[test]
 #[cfg(feature = "parity-scale-codec")]
 fn test_scale_trait_derivation() {
-    let call_info = CallInfo::default();
-    let encoded = call_info.encode();
+    let mut state = deprecated_create_test_state();
+
+    let entry_point_call = CallEntryPoint {
+        entry_point_selector: selector_from_name("test_storage_var"),
+        ..trivial_external_entry_point()
+    };
+
+    let actual_call_info = entry_point_call.execute_directly(&mut state).unwrap();
+    println!("Call info: {:#?}", actual_call_info);
+
+    let encoded = actual_call_info.encode();
     let decoded = CallInfo::decode(&mut encoded.as_slice()).expect("Failed to decode");
-    assert_eq!(call_info, decoded);
+    assert_eq!(actual_call_info, decoded);
 }

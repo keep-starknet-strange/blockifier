@@ -8,6 +8,9 @@ pub mod state;
 pub mod transaction;
 pub mod utils;
 
+#[cfg(feature = "parity-scale-codec")]
+pub mod scale_codecs;
+
 #[cfg(test)]
 pub mod test_utils;
 
