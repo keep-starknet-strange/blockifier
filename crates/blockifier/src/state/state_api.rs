@@ -34,7 +34,7 @@ pub trait StateReader {
 
     /// Returns the contract class of the given class hash.
     fn get_compiled_contract_class(&mut self, class_hash: &ClassHash)
-    -> StateResult<ContractClass>;
+        -> StateResult<ContractClass>;
 
     /// Returns the compiled class hash of the given class hash.
     fn get_compiled_class_hash(&mut self, class_hash: ClassHash) -> StateResult<CompiledClassHash>;

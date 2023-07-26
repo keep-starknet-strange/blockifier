@@ -193,7 +193,10 @@ macro_rules! retdata {
 #[derive(Debug, Default, Eq, PartialEq)]
 #[cfg_attr(feature = "parity-scale-codec", derive(Encode, Decode))]
 pub struct OrderedEvent {
-    #[cfg_attr(feature = "parity-scale-codec", codec(encoded_as = "crate::scale_codecs::USizeCodec"))]
+    #[cfg_attr(
+        feature = "parity-scale-codec",
+        codec(encoded_as = "crate::scale_codecs::USizeCodec")
+    )]
     pub order: usize,
     pub event: EventContent,
 }
@@ -208,7 +211,10 @@ pub struct MessageToL1 {
 #[derive(Debug, Default, Eq, PartialEq)]
 #[cfg_attr(feature = "parity-scale-codec", derive(Encode, Decode))]
 pub struct OrderedL2ToL1Message {
-    #[cfg_attr(feature = "parity-scale-codec", codec(encoded_as = "crate::scale_codecs::USizeCodec"))]
+    #[cfg_attr(
+        feature = "parity-scale-codec",
+        codec(encoded_as = "crate::scale_codecs::USizeCodec")
+    )]
     pub order: usize,
     pub message: MessageToL1,
 }
@@ -227,13 +233,19 @@ pub struct CallExecution {
 pub struct CallInfo {
     pub call: CallEntryPoint,
     pub execution: CallExecution,
-    #[cfg_attr(feature = "parity-scale-codec", codec(encoded_as = "crate::scale_codecs::ExecutionResourcesCodec"))]
+    #[cfg_attr(
+        feature = "parity-scale-codec",
+        codec(encoded_as = "crate::scale_codecs::ExecutionResourcesCodec")
+    )]
     pub vm_resources: VmExecutionResources,
     pub inner_calls: Vec<CallInfo>,
 
     // Additional information gathered during execution.
     pub storage_read_values: Vec<StarkFelt>,
-    #[cfg_attr(feature = "parity-scale-codec", codec(encoded_as = "crate::scale_codecs::HashSetCodec::<StorageKey>"))]
+    #[cfg_attr(
+        feature = "parity-scale-codec",
+        codec(encoded_as = "crate::scale_codecs::HashSetCodec::<StorageKey>")
+    )]
     pub accessed_storage_keys: HashSet<StorageKey>,
 }
 

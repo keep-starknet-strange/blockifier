@@ -14,7 +14,7 @@ use crate::transaction::objects::{ResourcesMapping, TransactionExecutionResult};
 use crate::transaction::transaction_types::TransactionType;
 
 const FEE_TRANSFER_N_STORAGE_CHANGES: u8 = 2; // Sender and sequencer balance update.
-// Exclude the sequencer balance update, since it's charged once throughout the batch.
+                                              // Exclude the sequencer balance update, since it's charged once throughout the batch.
 const FEE_TRANSFER_N_STORAGE_CHANGES_TO_CHARGE: u8 = FEE_TRANSFER_N_STORAGE_CHANGES - 1;
 
 pub fn verify_no_calls_to_other_contracts(

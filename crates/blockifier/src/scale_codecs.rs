@@ -1,8 +1,8 @@
+use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
 use parity_scale_codec::{Decode, Encode, EncodeAsRef};
 use std::collections::HashSet;
-use std::iter::FromIterator;
 use std::hash::Hash;
-use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
+use std::iter::FromIterator;
 
 #[derive(Encode, Decode)]
 pub struct USizeCodec(u64);
@@ -24,7 +24,9 @@ impl EncodeAsRef<'_, usize> for USizeCodec {
 }
 
 #[derive(Encode, Decode)]
-pub struct HashSetCodec<T>(Vec<T>) where T: Encode + Decode;
+pub struct HashSetCodec<T>(Vec<T>)
+where
+    T: Encode + Decode;
 
 impl<T: Encode + Decode + Clone + Eq + Hash> From<HashSetCodec<T>> for HashSet<T> {
     fn from(value: HashSetCodec<T>) -> Self {
@@ -54,10 +56,11 @@ impl From<ExecutionResourcesCodec> for ExecutionResources {
         Self {
             n_steps: value.n_steps as usize,
             n_memory_holes: value.n_memory_holes as usize,
-            builtin_instance_counter: value.builtin_instance_counter
+            builtin_instance_counter: value
+                .builtin_instance_counter
                 .into_iter()
                 .map(|(k, v)| (k, v as usize))
-                .collect()
+                .collect(),
         }
     }
 }
@@ -67,11 +70,12 @@ impl From<&ExecutionResources> for ExecutionResourcesCodec {
         Self {
             n_steps: value.n_steps as u64,
             n_memory_holes: value.n_memory_holes as u64,
-            builtin_instance_counter: value.builtin_instance_counter
+            builtin_instance_counter: value
+                .builtin_instance_counter
                 .clone()
                 .into_iter()
                 .map(|(k, v)| (k, v as u64))
-                .collect()
+                .collect(),
         }
     }
 }

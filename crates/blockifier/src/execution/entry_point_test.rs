@@ -564,8 +564,6 @@ fn test_scale_trait_derivation() {
     };
 
     let actual_call_info = entry_point_call.execute_directly(&mut state).unwrap();
-    println!("Call info: {:#?}", actual_call_info);
-
     let encoded = actual_call_info.encode();
     let decoded = CallInfo::decode(&mut encoded.as_slice()).expect("Failed to decode");
     assert_eq!(actual_call_info, decoded);
