@@ -233,10 +233,6 @@ pub struct CallExecution {
 pub struct CallInfo {
     pub call: CallEntryPoint,
     pub execution: CallExecution,
-    #[cfg_attr(
-        feature = "parity-scale-codec",
-        codec(encoded_as = "crate::scale_codecs::ExecutionResourcesCodec")
-    )]
     pub vm_resources: VmExecutionResources,
     pub inner_calls: Vec<CallInfo>,
 

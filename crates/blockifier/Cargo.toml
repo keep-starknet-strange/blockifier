@@ -8,9 +8,26 @@ default = ["std"]
 std = [
     "cairo-felt/std",
     "cairo-vm/std",
-    "starknet_api/std",
-    "thiserror-no-std/std",
+    "cairo-lang-casm/std",
+    "cairo-lang-casm-contract-class/std",
+    "cairo-lang-utils/std",
+    "cairo-lang-vm-utils/std",
+    "indexmap/std",
+    "itertools/use_std",
     "num-bigint/std",
+    "num-integer/std",
+    "num-traits/std",
+    "parity-scale-codec?/std",
+    "scale-info?/std",
+    "serde/std",
+    "serde_json/std",
+    "sha3/std",
+    "starknet_api/std",
+    "strum/std",
+    "phf/std",
+    "thiserror-no-std/std",
+    "log/std",
+    "starknet-crypto/std",
 ]
 testing = ["parity-scale-codec"]
 parity-scale-codec = [
