@@ -38,7 +38,7 @@ jobs:
           components: rustfmt
           toolchain: nightly-2022-11-03
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test
+      - run: cargo test --features testing
 
   udeps:
     runs-on: ubuntu-latest

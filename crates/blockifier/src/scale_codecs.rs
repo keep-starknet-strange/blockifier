@@ -1,9 +1,8 @@
-use parity_scale_codec::{Decode, Encode, EncodeAsRef};
 use core::hash::Hash;
+use parity_scale_codec::{Decode, Encode, EncodeAsRef};
 
 use crate::stdlib::collections::HashSet;
 use crate::stdlib::vec::Vec;
-use crate::stdlib::string::String;
 
 #[derive(Encode, Decode)]
 pub struct USizeCodec(u64);
