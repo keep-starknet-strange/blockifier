@@ -46,6 +46,7 @@ scale-info = { version = "2.8.0", default-features = false }
 serde = { version = "1.0.130", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
 sha3 = { version = "0.10.6", default-features = false }
+spin = { version = "0.9.8", default-features = false }
 starknet_api = { git = "https://github.com/keep-starknet-strange/starknet-api", branch = "no_std-support-dc83f05", default-features = false }
 strum = { version = "0.24.1", default-features = false }
 strum_macros = { version = "0.24.3", default-features = false }

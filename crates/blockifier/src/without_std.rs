@@ -2,7 +2,7 @@
 extern crate alloc;
 
 pub mod without_std {
-    pub use alloc::{borrow, boxed, rc, string, sync, vec};
+    pub use alloc::{borrow, boxed, rc, string, vec};
     pub use core::{any, fmt, mem, num, ops};
 
     pub mod collections {
@@ -43,5 +43,10 @@ pub mod without_std {
                 Some(1) // TODO
             }
         }
+    }
+
+    pub mod sync {
+        pub use alloc::sync::Arc;
+        pub use spin::{Mutex, MutexGuard};
     }
 }

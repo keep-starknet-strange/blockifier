@@ -71,6 +71,7 @@ scale-info = { workspace = true, optional = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["arbitrary_precision"] }
 sha3 = { workspace = true }
+spin = { workspace = true, features = ["mutex", "spin_mutex"] }
 starknet_api = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
@@ -88,5 +89,6 @@ pretty_assertions.workspace = true
 rstest.workspace = true
 test-case.workspace = true
 
-[target.'cfg(not(feature = "std"))'.dependencies]
-spin = { version = "0.9.8", default-features = false, features = ["mutex", "spin_mutex"] }
+[package.metadata.cargo-udeps.ignore]
+# non-deterministic import of "spin" causes initial `udeps` run to fail
+normal = ["spin"]

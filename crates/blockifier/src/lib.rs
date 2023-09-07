@@ -28,14 +28,11 @@ pub mod stdlib {
 }
 
 mod sync {
-    #[cfg(not(feature = "std"))]
-    pub use alloc::sync::Arc;
     #[cfg(feature = "std")]
     pub use std::sync::{Arc, Mutex, MutexGuard};
 
-    #[allow(unused_imports)]
     #[cfg(not(feature = "std"))]
-    pub use spin::{Mutex, MutexGuard};
+    pub use crate::without_std::sync::*;
 }
 
 mod cmp {
