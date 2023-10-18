@@ -57,4 +57,3 @@ lazy_static = { version = "1.4.0", default-features = false, features = [
     "spin_no_std",
 ] }
 starknet-crypto = { version = "0.5.1", default-features = false }
-libm = { version = "0.2.7", default-features = false }

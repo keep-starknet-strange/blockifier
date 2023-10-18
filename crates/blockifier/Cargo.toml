@@ -83,7 +83,6 @@ hashbrown = { workspace = true }
 lazy_static = { workspace = true }
 thiserror-no-std = { workspace = true }
 starknet-crypto = { workspace = true }
-libm = { workspace = true }
 spin = { workspace = true, features = ["mutex", "spin_mutex"] }
 
 [dev-dependencies]
