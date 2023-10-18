@@ -1,7 +1,5 @@
-use sp_arithmetic::{
-    fixed_point::{FixedPointNumber, FixedU128},
-    traits::Zero,
-};
+use sp_arithmetic::fixed_point::{FixedPointNumber, FixedU128};
+use sp_arithmetic::traits::Zero;
 use starknet_api::transaction::Fee;
 
 use crate::abi::constants;
