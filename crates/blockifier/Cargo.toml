@@ -36,6 +36,7 @@ std = [
     "dep:cached",
     "log/std",
     "starknet-crypto/std",
+    "sp-arithmetic/std"
 ]
 testing = ["parity-scale-codec"]
 parity-scale-codec = [
@@ -69,6 +70,7 @@ num-traits = { workspace = true }
 parity-scale-codec = { workspace = true, optional = true, features = [
     "derive", "max-encoded-len",
 ] }
+sp-arithmetic = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43", default-features = false }
 scale-info = { workspace = true, optional = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["arbitrary_precision"] }

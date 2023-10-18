@@ -8,6 +8,7 @@ use cairo_vm::vm::runners::builtin_runner::{
     POSEIDON_BUILTIN_NAME, RANGE_CHECK_BUILTIN_NAME, SIGNATURE_BUILTIN_NAME,
 };
 use num_traits::{One, Zero};
+use sp_arithmetic::fixed_point::FixedU128;
 use starknet_api::api_core::{
     calculate_contract_address, ChainId, ClassHash, CompiledClassHash, ContractAddress,
     EntryPointSelector, Nonce, PatriciaKey,
@@ -346,14 +347,14 @@ impl BlockContext {
 
     pub fn create_for_account_testing() -> BlockContext {
         let vm_resource_fee_cost = Arc::new(HashMap::from([
-            (constants::N_STEPS_RESOURCE.to_string(), 1_f64),
-            (HASH_BUILTIN_NAME.to_string(), 1_f64),
-            (RANGE_CHECK_BUILTIN_NAME.to_string(), 1_f64),
-            (SIGNATURE_BUILTIN_NAME.to_string(), 1_f64),
-            (BITWISE_BUILTIN_NAME.to_string(), 1_f64),
-            (POSEIDON_BUILTIN_NAME.to_string(), 1_f64),
-            (OUTPUT_BUILTIN_NAME.to_string(), 1_f64),
-            (EC_OP_BUILTIN_NAME.to_string(), 1_f64),
+            (constants::N_STEPS_RESOURCE.to_string(), FixedU128::one()),
+            (HASH_BUILTIN_NAME.to_string(), FixedU128::one()),
+            (RANGE_CHECK_BUILTIN_NAME.to_string(), FixedU128::one()),
+            (SIGNATURE_BUILTIN_NAME.to_string(), FixedU128::one()),
+            (BITWISE_BUILTIN_NAME.to_string(), FixedU128::one()),
+            (POSEIDON_BUILTIN_NAME.to_string(), FixedU128::one()),
+            (OUTPUT_BUILTIN_NAME.to_string(), FixedU128::one()),
+            (EC_OP_BUILTIN_NAME.to_string(), FixedU128::one()),
         ]));
         BlockContext { vm_resource_fee_cost, ..BlockContext::create_for_testing() }
     }

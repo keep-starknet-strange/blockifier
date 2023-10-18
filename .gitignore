@@ -5,3 +5,4 @@ build
 dist
 target
 */.vscode/*
+*.DS_Store

@@ -1,4 +1,7 @@
-use libm::ceil;
+use sp_arithmetic::{
+    fixed_point::{FixedPointNumber, FixedU128},
+    traits::Zero,
+};
 use starknet_api::transaction::Fee;
 
 use crate::abi::constants;
@@ -26,7 +29,7 @@ pub fn extract_l1_gas_and_vm_usage(resources: &ResourcesMapping) -> (usize, Reso
 pub fn calculate_l1_gas_by_vm_usage(
     block_context: &BlockContext,
     vm_resource_usage: &ResourcesMapping,
-) -> TransactionExecutionResult<f64> {
+) -> TransactionExecutionResult<FixedU128> {
     let vm_resource_fee_costs = &block_context.vm_resource_fee_cost;
     let vm_resource_names = HashSet::<&String>::from_iter(vm_resource_usage.0.keys());
     if !vm_resource_names.is_subset(&HashSet::from_iter(vm_resource_fee_costs.keys())) {
@@ -34,14 +37,17 @@ pub fn calculate_l1_gas_by_vm_usage(
     };
 
     // Convert Cairo usage to L1 gas usage.
-    let vm_l1_gas_usage = vm_resource_fee_costs
+    vm_resource_fee_costs
         .iter()
         .map(|(key, resource_val)| {
-            (*resource_val) * vm_resource_usage.0.get(key).cloned().unwrap_or_default() as f64
-        })
-        .fold(f64::NAN, f64::max);
+            let key_resource_usage =
+                vm_resource_usage.0.get(key).cloned().unwrap_or_default() as u128;
+            let key_resource_usage = FixedU128::checked_from_integer(key_resource_usage)
+                .ok_or(TransactionExecutionError::FixedPointConversion);
 
-    Ok(vm_l1_gas_usage)
+            key_resource_usage.map(|kru| kru.mul(*resource_val))
+        })
+        .try_fold(FixedU128::zero(), |accum, res| res.map(|v| v.max(accum)))
 }
 
 /// Calculates the fee that should be charged, given execution resources.
@@ -53,7 +59,10 @@ pub fn calculate_tx_fee(
 ) -> TransactionExecutionResult<Fee> {
     let (l1_gas_usage, vm_resources) = extract_l1_gas_and_vm_usage(resources);
     let l1_gas_by_vm_usage = calculate_l1_gas_by_vm_usage(block_context, &vm_resources)?;
-    let total_l1_gas_usage = l1_gas_usage as f64 + l1_gas_by_vm_usage;
+    let total_l1_gas_usage = FixedU128::checked_from_integer(l1_gas_usage as u128)
+        .ok_or(TransactionExecutionError::FixedPointConversion)?
+        + l1_gas_by_vm_usage;
+    let total_l1_gas_usage = total_l1_gas_usage.ceil();
 
-    Ok(Fee(ceil(total_l1_gas_usage) as u128 * block_context.gas_price))
+    Ok(Fee(total_l1_gas_usage.saturating_mul_int(block_context.gas_price)))
 }

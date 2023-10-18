@@ -62,4 +62,6 @@ pub enum TransactionExecutionError {
     UnexpectedHoles { object: String, order: usize },
     #[error("Transaction validation has failed.")]
     ValidateTransactionError(#[source] EntryPointExecutionError),
+    #[error("Failed to convert value to fixed point")]
+    FixedPointConversion,
 }

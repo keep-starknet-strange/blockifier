@@ -6,6 +6,7 @@ use cairo_vm::vm::runners::cairo_runner::{
 use num_traits::float::FloatCore;
 #[cfg(feature = "parity-scale-codec")]
 use parity_scale_codec::{Decode, Encode};
+use sp_arithmetic::fixed_point::{FixedPointNumber, FixedU128};
 use starknet_api::api_core::{ClassHash, ContractAddress, EntryPointSelector, EthAddress};
 use starknet_api::deprecated_contract_class::EntryPointType;
 use starknet_api::hash::StarkFelt;
@@ -90,18 +91,18 @@ pub struct EntryPointExecutionContext {
     /// Used to track error stack for call chain.
     pub error_stack: Vec<(ContractAddress, String)>,
 
-    current_recursion_depth: usize,
+    current_recursion_depth: u32,
     // Maximum depth is limited by the stack size, which is configured at `.cargo/config.toml`.
-    max_recursion_depth: usize,
+    max_recursion_depth: u32,
 }
 impl EntryPointExecutionContext {
     pub fn new(
         block_context: BlockContext,
         account_tx_context: AccountTransactionContext,
-        max_n_steps: usize,
+        max_n_steps: u32,
     ) -> Self {
         Self {
-            vm_run_resources: RunResources::new(max_n_steps),
+            vm_run_resources: RunResources::new(max_n_steps as usize),
             n_emitted_events: 0,
             n_sent_messages_to_l1: 0,
             error_stack: vec![],
@@ -119,7 +120,7 @@ impl EntryPointExecutionContext {
         Self::new(
             block_context.clone(),
             account_tx_context.clone(),
-            block_context.validate_max_n_steps as usize,
+            block_context.validate_max_n_steps,
         )
     }
 
@@ -139,9 +140,9 @@ impl EntryPointExecutionContext {
     pub fn max_invoke_steps(
         block_context: &BlockContext,
         account_tx_context: &AccountTransactionContext,
-    ) -> usize {
+    ) -> u32 {
         if account_tx_context.max_fee == Fee(0) {
-            min(constants::MAX_STEPS_PER_TX, block_context.invoke_tx_max_n_steps as usize)
+            min(constants::MAX_STEPS_PER_TX, block_context.invoke_tx_max_n_steps)
         } else {
             let gas_per_step = block_context
                 .vm_resource_fee_cost
@@ -149,10 +150,15 @@ impl EntryPointExecutionContext {
                 .unwrap_or_else(|| {
                     panic!("{} must appear in `vm_resource_fee_cost`.", constants::N_STEPS_RESOURCE)
                 });
-            let max_gas = account_tx_context.max_fee.0 / block_context.gas_price;
-            ((max_gas as f64 / gas_per_step).floor() as usize)
+            let max_gas = FixedU128::saturating_from_rational(
+                account_tx_context.max_fee.0,
+                block_context.gas_price,
+            );
+            max_gas
+                .div(*gas_per_step)
+                .saturating_mul_int(1u32)
                 .min(constants::MAX_STEPS_PER_TX)
-                .min(block_context.invoke_tx_max_n_steps as usize)
+                .min(block_context.invoke_tx_max_n_steps)
         }
     }
 

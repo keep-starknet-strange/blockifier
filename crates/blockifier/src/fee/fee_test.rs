@@ -3,6 +3,8 @@ use cairo_vm::vm::runners::builtin_runner::{
     BITWISE_BUILTIN_NAME, HASH_BUILTIN_NAME, POSEIDON_BUILTIN_NAME, RANGE_CHECK_BUILTIN_NAME,
     SIGNATURE_BUILTIN_NAME,
 };
+use sp_arithmetic::fixed_point::FixedU128;
+use sp_arithmetic::FixedPointNumber;
 
 use crate::abi::constants;
 use crate::block_context::BlockContext;
@@ -32,7 +34,7 @@ fn test_calculate_l1_gas_by_vm_usage() {
     // Verify calculation - in our case, n_steps is the heaviest resource.
     let l1_gas_by_vm_usage = vm_resource_usage.0.get(constants::N_STEPS_RESOURCE).unwrap();
     assert_eq!(
-        *l1_gas_by_vm_usage as f64,
+        FixedU128::checked_from_integer((*l1_gas_by_vm_usage) as u128).unwrap(),
         calculate_l1_gas_by_vm_usage(&block_context, &vm_resource_usage).unwrap()
     );
 
