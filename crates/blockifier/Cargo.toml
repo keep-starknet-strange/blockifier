@@ -70,7 +70,7 @@ num-traits = { workspace = true }
 parity-scale-codec = { workspace = true, optional = true, features = [
     "derive", "max-encoded-len",
 ] }
-sp-arithmetic = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43", default-features = false }
+sp-arithmetic = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.3.0", default-features = false }
 scale-info = { workspace = true, optional = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["arbitrary_precision"] }
