@@ -6,6 +6,7 @@ use cairo_vm::vm::runners::cairo_runner::{
 use num_traits::float::FloatCore;
 #[cfg(feature = "parity-scale-codec")]
 use parity_scale_codec::{Decode, Encode};
+use serde::Serialize;
 use sp_arithmetic::fixed_point::{FixedPointNumber, FixedU128};
 use starknet_api::api_core::{ClassHash, ContractAddress, EntryPointSelector, EthAddress};
 use starknet_api::deprecated_contract_class::EntryPointType;
@@ -37,7 +38,7 @@ pub const FAULTY_CLASS_HASH: &str =
 pub type EntryPointExecutionResult<T> = Result<T, EntryPointExecutionError>;
 
 /// Represents a the type of the call (used for debugging).
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq, Serialize)]
 #[cfg_attr(feature = "parity-scale-codec", derive(Encode, Decode))]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum CallType {
