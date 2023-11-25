@@ -39,6 +39,7 @@ pub type EntryPointExecutionResult<T> = Result<T, EntryPointExecutionError>;
 /// Represents a the type of the call (used for debugging).
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 #[cfg_attr(feature = "parity-scale-codec", derive(Encode, Decode))]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum CallType {
     #[default]
     Call = 0,
