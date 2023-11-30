@@ -49,6 +49,6 @@ jobs:
       - if: ${{ steps.cache-cargo.outputs.cache-hit != 'true' }}
         name: "Download and run cargo-udeps"
         run: |
-          cargo install cargo-udeps && cargo udeps
+          cargo install cargo-udeps && cargo udeps --no-default-features --features "parity-scale-codec"
         env:
           RUSTUP_TOOLCHAIN: nightly-2023-07-05
