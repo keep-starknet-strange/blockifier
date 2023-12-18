@@ -88,7 +88,11 @@ fn expected_validate_call_info(
             usize::from(entry_point_selector_name == constants::VALIDATE_ENTRY_POINT_NAME)
         }
         CairoVersion::Cairo1 => {
-            if entry_point_selector_name == constants::VALIDATE_ENTRY_POINT_NAME { 7 } else { 2 }
+            if entry_point_selector_name == constants::VALIDATE_ENTRY_POINT_NAME {
+                7
+            } else {
+                2
+            }
         }
     };
     let n_memory_holes = match cairo_version {
