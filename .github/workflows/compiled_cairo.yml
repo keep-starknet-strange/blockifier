@@ -3,9 +3,9 @@ name: CI
 on:
   push:
     branches:
-    - main
+      - main
     tags:
-    - v[0-9].**
+      - v[0-9].**
 
   pull_request:
     types:
@@ -13,7 +13,7 @@ on:
       - reopened
       - synchronize
     paths:
-     - 'crates/blockifier/feature_contracts/cairo0/**'
+      - "crates/blockifier/feature_contracts/cairo0/**"
 
 jobs:
   verify_cairo_file_dependencies:
@@ -27,8 +27,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-          cache: 'pip'
-      - run:
-          pip install -r crates/blockifier/tests/requirements.txt;
+          python-version: "3.9"
+          cache: "pip"
+      - run: pip install -r crates/blockifier/tests/requirements.txt;
           cargo test verify_feature_contracts -- --include-ignored

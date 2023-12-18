@@ -127,7 +127,7 @@ pub fn secp256k1_get_point_from_x(
     if request.x >= modulos {
         return Err(SyscallExecutionError::SyscallError {
             error_data: vec![
-                StarkFelt::try_from(INVALID_ARGUMENT).map_err(SyscallExecutionError::from)?
+                StarkFelt::try_from(INVALID_ARGUMENT).map_err(SyscallExecutionError::from)?,
             ],
         });
     }
@@ -136,11 +136,7 @@ pub fn secp256k1_get_point_from_x(
     let maybe_ec_point = secp256k1::Affine::get_ys_from_x_unchecked(x)
         .map(|(smaller, greater)| {
             // Return the correct y coordinate based on the parity.
-            if smaller.into_bigint().is_odd() == request.y_parity {
-                smaller
-            } else {
-                greater
-            }
+            if smaller.into_bigint().is_odd() == request.y_parity { smaller } else { greater }
         })
         .map(|y| secp256k1::Affine::new_unchecked(x, y))
         .filter(|p| p.is_in_correct_subgroup_assuming_on_curve());
@@ -240,7 +236,7 @@ pub fn secp256k1_new(
     if x >= modulos || y >= modulos {
         return Err(SyscallExecutionError::SyscallError {
             error_data: vec![
-                StarkFelt::try_from(INVALID_ARGUMENT).map_err(SyscallExecutionError::from)?
+                StarkFelt::try_from(INVALID_ARGUMENT).map_err(SyscallExecutionError::from)?,
             ],
         });
     }

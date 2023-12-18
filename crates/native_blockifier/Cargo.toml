@@ -17,7 +17,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 blockifier = { path = "../blockifier", version = "0.1.0-rc2", features = [
-    "testing",
+  "testing",
 ] }
 cairo-lang-starknet.workspace = true
 cairo-vm.workspace = true
@@ -26,9 +26,9 @@ log.workspace = true
 num-bigint.workspace = true
 papyrus_storage = { workspace = true, features = ["testing"] }
 pyo3 = { version = "0.19.1", features = [
-    "num-bigint",
-    "hashbrown",
-    "extension-module",
+  "num-bigint",
+  "hashbrown",
+  "extension-module",
 ] }
 pyo3-log = "0.8.1"
 # We need this rev to be the same as in both `blockifier` and `papyrus_storage`.
