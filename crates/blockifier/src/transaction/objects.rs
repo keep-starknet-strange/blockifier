@@ -50,6 +50,20 @@ pub struct TransactionExecutionInfo {
     //   internal structs in this enum, this field should be `Option<TransactionExecutionError>`.
     pub revert_error: Option<String>,
 }
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for TransactionExecutionInfo {
+    type Identity = Self;
+    // The type info is saying that the ContractClassV0Inner must be seen as an
+    // array of bytes.
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("TransactionExecutionInfo", module_path!()))
+            .composite(
+                scale_info::build::Fields::unnamed()
+                    .field(|f| f.ty::<[u8]>().type_name("TransactionExecutionInfo")),
+            )
+    }
+}
 
 impl TransactionExecutionInfo {
     pub fn non_optional_call_infos(&self) -> Vec<&CallInfo> {
@@ -97,19 +111,5 @@ impl Decode for ResourcesMapping {
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
         Ok(ResourcesMapping(HashMap::from_iter(<Vec<(String, u64)>>::decode(input)?)))
-    }
-}
-#[cfg(feature = "scale-info")]
-impl scale_info::TypeInfo for ResourcesMapping {
-    type Identity = Self;
-    // The type info is saying that the ContractClassV0Inner must be seen as an
-    // array of bytes.
-    fn type_info() -> scale_info::Type {
-        scale_info::Type::builder()
-            .path(scale_info::Path::new("ResourcesMapping", module_path!()))
-            .composite(
-                scale_info::build::Fields::unnamed()
-                    .field(|f| f.ty::<[u8]>().type_name("ResourcesMapping")),
-            )
     }
 }

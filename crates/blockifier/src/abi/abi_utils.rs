@@ -67,7 +67,8 @@ pub fn get_uint256_storage_var_addresses(
     // TODO(Dori, 1/7/2023): When a standard representation for large integers is set, there may
     //   be a better way to add 1 to the key.
     let high_key = StorageKey(PatriciaKey::try_from(StarkFelt::from(
-        FieldElement::from(*low_key.0.key()) + FieldElement::ONE,
+        FieldElement::from_byte_slice_be(low_key.0.key().bytes()).expect("converting felt to felt")
+            + FieldElement::ONE,
     ))?);
     Ok((low_key, high_key))
 }
