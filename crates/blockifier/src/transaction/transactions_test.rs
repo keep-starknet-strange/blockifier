@@ -377,8 +377,8 @@ fn test_invoke_tx(
             // 1 modified contract, 1 storage update (sender balance).
             (abi_constants::GAS_USAGE.to_string(), (2 + 2) * 612),
             (HASH_BUILTIN_NAME.to_string(), 16),
-            (RANGE_CHECK_BUILTIN_NAME.to_string(), expected_arguments.range_check),
-            (abi_constants::N_STEPS_RESOURCE.to_string(), expected_arguments.n_steps),
+            (RANGE_CHECK_BUILTIN_NAME.to_string(), expected_arguments.range_check as u64),
+            (abi_constants::N_STEPS_RESOURCE.to_string(), expected_arguments.n_steps as u64),
         ])),
         revert_error: None,
     };
@@ -647,8 +647,8 @@ fn test_declare_tx(
             // 1 modified contract, 1 storage update (sender balance).
             (abi_constants::GAS_USAGE.to_string(), (2 + 2) * 612),
             (HASH_BUILTIN_NAME.to_string(), 15),
-            (RANGE_CHECK_BUILTIN_NAME.to_string(), expected_range_check_builtin),
-            (abi_constants::N_STEPS_RESOURCE.to_string(), expected_n_steps_resource),
+            (RANGE_CHECK_BUILTIN_NAME.to_string(), expected_range_check_builtin as u64),
+            (abi_constants::N_STEPS_RESOURCE.to_string(), expected_n_steps_resource as u64),
         ])),
     };
 
@@ -837,8 +837,8 @@ fn test_deploy_account_tx(
             // 1 modified contract, 1 storage update (sender balance) + 1 class_hash update.
             (abi_constants::GAS_USAGE.to_string(), (2 + 2 + 1) * 612),
             (HASH_BUILTIN_NAME.to_string(), 23),
-            (RANGE_CHECK_BUILTIN_NAME.to_string(), expected_range_check_builtin),
-            (abi_constants::N_STEPS_RESOURCE.to_string(), expected_n_steps_resource),
+            (RANGE_CHECK_BUILTIN_NAME.to_string(), expected_range_check_builtin as u64),
+            (abi_constants::N_STEPS_RESOURCE.to_string(), expected_n_steps_resource as u64),
         ])),
     };
 
@@ -979,7 +979,7 @@ fn test_calculate_tx_gas_usage() {
 
     assert_eq!(
         *tx_execution_info.actual_resources.0.get(abi_constants::GAS_USAGE).unwrap(),
-        l1_gas_usage
+        l1_gas_usage as u64
     );
 
     // A tx that changes the account and some other balance in execute.
@@ -1020,6 +1020,6 @@ fn test_calculate_tx_gas_usage() {
 
     assert_eq!(
         *tx_execution_info.actual_resources.0.get(abi_constants::GAS_USAGE).unwrap(),
-        l1_gas_usage
+        l1_gas_usage as u64
     );
 }

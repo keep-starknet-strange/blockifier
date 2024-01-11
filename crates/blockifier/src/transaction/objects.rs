@@ -1,4 +1,6 @@
 use itertools::concat;
+#[cfg(feature = "parity-scale-codec")]
+use parity_scale_codec::{Decode, Encode};
 use starknet_api::api_core::{ClassHash, ContractAddress, Nonce};
 use starknet_api::hash::StarkFelt;
 use starknet_api::transaction::{Fee, TransactionHash, TransactionSignature, TransactionVersion};
@@ -8,8 +10,6 @@ use crate::stdlib::collections::{HashMap, HashSet};
 use crate::stdlib::string::String;
 use crate::stdlib::vec::Vec;
 use crate::transaction::errors::TransactionExecutionError;
-#[cfg(feature = "parity-scale-codec")]
-use parity_scale_codec::{Decode, Encode};
 
 pub type TransactionExecutionResult<T> = Result<T, TransactionExecutionError>;
 
@@ -78,13 +78,12 @@ impl TransactionExecutionInfo {
 
 /// A mapping from a transaction execution resource to its actual usage.
 #[derive(Debug, Default, Eq, PartialEq)]
-#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct ResourcesMapping(pub HashMap<String, u64>);
 
 #[cfg(feature = "parity-scale-codec")]
 impl Encode for ResourcesMapping {
     fn size_hint(&self) -> usize {
-        self.0.len()
+        self.0.len() * core::mem::size_of::<u64>()
     }
 
     fn encode(&self) -> Vec<u8> {
@@ -98,5 +97,19 @@ impl Decode for ResourcesMapping {
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
         Ok(ResourcesMapping(HashMap::from_iter(<Vec<(String, u64)>>::decode(input)?)))
+    }
+}
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for ResourcesMapping {
+    type Identity = Self;
+    // The type info is saying that the ContractClassV0Inner must be seen as an
+    // array of bytes.
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("ResourcesMapping", module_path!()))
+            .composite(
+                scale_info::build::Fields::unnamed()
+                    .field(|f| f.ty::<[u8]>().type_name("ResourcesMapping")),
+            )
     }
 }

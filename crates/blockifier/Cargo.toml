@@ -8,7 +8,7 @@ description = "The transaction-executing component in the StarkNet sequencer."
 
 
 [features]
-default = ["std"]
+default = ["std" ]
 std = [
     "cairo-felt/std",
     "cairo-vm/std",
