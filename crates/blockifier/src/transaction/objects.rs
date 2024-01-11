@@ -10,6 +10,8 @@ use crate::stdlib::collections::{HashMap, HashSet};
 use crate::stdlib::string::String;
 use crate::stdlib::vec::Vec;
 use crate::transaction::errors::TransactionExecutionError;
+#[cfg(feature = "parity-scale-codec")]
+use parity_scale_codec::{Decode, Encode};
 
 pub type TransactionExecutionResult<T> = Result<T, TransactionExecutionError>;
 
