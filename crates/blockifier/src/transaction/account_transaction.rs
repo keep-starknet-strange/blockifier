@@ -724,7 +724,7 @@ impl AccountTransaction {
 
         // Add reverted steps to actual_resources' n_steps for correct fee charge.
         *actual_resources.0.get_mut(&abi_constants::N_STEPS_RESOURCE.to_string()).unwrap() +=
-            n_reverted_steps;
+            n_reverted_steps as u64;
 
         let mut actual_fee = calculate_tx_fee(&actual_resources, block_context)?;
 

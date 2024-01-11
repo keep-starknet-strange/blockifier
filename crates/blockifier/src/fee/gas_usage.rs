@@ -175,9 +175,9 @@ pub fn estimate_minimal_fee(
     let resources = ResourcesMapping(HashMap::from([
         (
             constants::GAS_USAGE.to_string(),
-            gas_for_type * eth_gas_constants::SHARP_GAS_PER_MEMORY_WORD,
+            (gas_for_type * eth_gas_constants::SHARP_GAS_PER_MEMORY_WORD) as u64,
         ),
-        (constants::N_STEPS_RESOURCE.to_string(), os_steps_for_type),
+        (constants::N_STEPS_RESOURCE.to_string(), os_steps_for_type as u64),
     ]));
 
     calculate_tx_fee(&resources, block_context)

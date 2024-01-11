@@ -8,6 +8,8 @@ use crate::stdlib::collections::{HashMap, HashSet};
 use crate::stdlib::string::String;
 use crate::stdlib::vec::Vec;
 use crate::transaction::errors::TransactionExecutionError;
+#[cfg(feature = "parity-scale-codec")]
+use parity_scale_codec::{Decode, Encode};
 
 pub type TransactionExecutionResult<T> = Result<T, TransactionExecutionError>;
 
@@ -24,12 +26,13 @@ pub struct AccountTransactionContext {
 
 impl AccountTransactionContext {
     pub fn is_v0(&self) -> bool {
-        self.version == TransactionVersion(StarkFelt::try_from(0_u8).unwrap())
+        self.version == TransactionVersion(StarkFelt::from(0_u8))
     }
 }
 
 /// Contains the information gathered by the execution of a transaction.
 #[derive(Debug, Default, Eq, PartialEq)]
+#[cfg_attr(feature = "parity-scale-codec", derive(Encode, Decode))]
 pub struct TransactionExecutionInfo {
     /// Transaction validation call info; [None] for `L1Handler`.
     pub validate_call_info: Option<CallInfo>,
@@ -75,4 +78,25 @@ impl TransactionExecutionInfo {
 
 /// A mapping from a transaction execution resource to its actual usage.
 #[derive(Debug, Default, Eq, PartialEq)]
-pub struct ResourcesMapping(pub HashMap<String, usize>);
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
+pub struct ResourcesMapping(pub HashMap<String, u64>);
+
+#[cfg(feature = "parity-scale-codec")]
+impl Encode for ResourcesMapping {
+    fn size_hint(&self) -> usize {
+        self.0.len()
+    }
+
+    fn encode(&self) -> Vec<u8> {
+        self.0.clone().into_iter().collect::<Vec<(String, u64)>>().encode()
+    }
+}
+
+#[cfg(feature = "parity-scale-codec")]
+impl Decode for ResourcesMapping {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        Ok(ResourcesMapping(HashMap::from_iter(<Vec<(String, u64)>>::decode(input)?)))
+    }
+}

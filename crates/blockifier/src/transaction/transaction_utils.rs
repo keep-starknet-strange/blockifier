@@ -67,10 +67,11 @@ pub fn calculate_tx_resources(
             .unwrap_or_default();
 
     let mut tx_resources = HashMap::from([
-        (constants::GAS_USAGE.to_string(), l1_gas_usage),
-        (constants::N_STEPS_RESOURCE.to_string(), n_steps + total_vm_usage.n_memory_holes),
+        (constants::GAS_USAGE.to_string(), l1_gas_usage as u64),
+        (constants::N_STEPS_RESOURCE.to_string(), (n_steps + total_vm_usage.n_memory_holes) as u64),
     ]);
-    tx_resources.extend(total_vm_usage.builtin_instance_counter);
+    tx_resources
+        .extend(total_vm_usage.builtin_instance_counter.into_iter().map(|(k, v)| (k, v as u64)));
 
     Ok(ResourcesMapping(tx_resources))
 }
