@@ -264,6 +264,7 @@ macro_rules! retdata {
 
 #[derive(Debug, Default, Eq, PartialEq)]
 #[cfg_attr(feature = "parity-scale-codec", derive(Encode, Decode))]
+#[cfg_attr(feature = "clone", derive(Clone))]
 pub struct OrderedEvent {
     #[cfg_attr(
         feature = "parity-scale-codec",
@@ -276,6 +277,7 @@ pub struct OrderedEvent {
 #[derive(Debug, Default, Eq, PartialEq)]
 #[cfg_attr(feature = "parity-scale-codec", derive(Encode, Decode))]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
+#[cfg_attr(feature = "clone", derive(Clone))]
 pub struct MessageToL1 {
     pub to_address: EthAddress,
     pub payload: L2ToL1Payload,
@@ -283,6 +285,7 @@ pub struct MessageToL1 {
 
 #[derive(Debug, Default, Eq, PartialEq)]
 #[cfg_attr(feature = "parity-scale-codec", derive(Encode, Decode))]
+#[cfg_attr(feature = "clone", derive(Clone))]
 pub struct OrderedL2ToL1Message {
     #[cfg_attr(
         feature = "parity-scale-codec",
@@ -293,6 +296,7 @@ pub struct OrderedL2ToL1Message {
 }
 #[derive(Debug, Default, Eq, PartialEq)]
 #[cfg_attr(feature = "parity-scale-codec", derive(Encode, Decode))]
+#[cfg_attr(feature = "clone", derive(Clone))]
 pub struct CallExecution {
     pub retdata: Retdata,
     pub events: Vec<OrderedEvent>,
@@ -303,6 +307,7 @@ pub struct CallExecution {
 
 #[derive(Debug, Default, Eq, PartialEq)]
 #[cfg_attr(feature = "parity-scale-codec", derive(Encode, Decode))]
+#[cfg_attr(feature = "clone", derive(Clone))]
 pub struct CallInfo {
     pub call: CallEntryPoint,
     pub execution: CallExecution,
