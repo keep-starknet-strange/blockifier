@@ -5,6 +5,9 @@ use derive_more::IntoIterator;
 #[cfg(not(feature = "std"))]
 use hashbrown::hash_map::DefaultHashBuilder as HasherBuilder;
 use indexmap::IndexMap;
+#[cfg(feature = "scale-info")]
+use scale_info::{build::Fields, Path, Type, TypeInfo};
+use serde::{Deserialize, Serialize};
 use starknet_api::api_core::{ClassHash, CompiledClassHash, ContractAddress, Nonce};
 use starknet_api::hash::StarkFelt;
 use starknet_api::state::StorageKey;
@@ -597,7 +600,7 @@ impl<'a, S: StateReader> TransactionalState<'a, S> {
 }
 
 /// Holds uncommitted changes induced on StarkNet contracts.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentStateDiff {
     // Contract instance attributes (per address).
     pub address_to_class_hash: IndexMap<ContractAddress, ClassHash, HasherBuilder>,
@@ -665,6 +668,20 @@ impl parity_scale_codec::Decode for CommitmentStateDiff {
         })
     }
 }
+
+#[cfg(feature = "scale-info")]
+impl TypeInfo for CommitmentStateDiff {
+    type Identity = Self;
+
+    // The type info is saying that the CommitmentStateDiff must be seen as an
+    // array of bytes.
+    fn type_info() -> Type {
+        Type::builder()
+            .path(Path::new("CommitmentStateDiff", module_path!()))
+            .composite(Fields::unnamed().field(|f| f.ty::<[u8]>().type_name("CommitmentStateDiff")))
+    }
+}
+
 /// Holds the state changes.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct StateChanges {
