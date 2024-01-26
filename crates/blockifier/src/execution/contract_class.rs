@@ -116,7 +116,7 @@ impl ContractClassV0 {
             + self.n_builtins()
             + self.bytecode_length()
             + 1; // Hinted class hash.
-        // The hashed data size is approximately the number of hashes (invoked in hash chains).
+                 // The hashed data size is approximately the number of hashes (invoked in hash chains).
         let n_steps = constants::N_STEPS_PER_PEDERSEN * hashed_data_size;
 
         VmExecutionResources {
@@ -443,9 +443,7 @@ fn convert_entry_points_v1(
         .into_iter()
         .map(|ep| -> Result<_, ProgramError> {
             Ok(EntryPointV1 {
-                selector: EntryPointSelector(felt_to_stark_felt(
-                    &Felt252::try_from(ep.selector).unwrap(),
-                )),
+                selector: EntryPointSelector(felt_to_stark_felt(&Felt252::from(ep.selector))),
                 offset: EntryPointOffset(ep.offset),
                 builtins: ep.builtins.into_iter().map(|builtin| builtin + "_builtin").collect(),
             })
