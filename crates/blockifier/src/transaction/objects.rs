@@ -1,3 +1,6 @@
+#[cfg(feature = "std")]
+use std::collections::hash_map::RandomState as HasherBuilder;
+
 #[cfg(not(feature = "std"))]
 use hashbrown::hash_map::DefaultHashBuilder as HasherBuilder;
 use indexmap::IndexMap;
@@ -7,8 +10,6 @@ use parity_scale_codec::{Decode, Encode};
 use starknet_api::api_core::{ClassHash, ContractAddress, Nonce};
 use starknet_api::hash::StarkFelt;
 use starknet_api::transaction::{Fee, TransactionHash, TransactionSignature, TransactionVersion};
-#[cfg(feature = "std")]
-use std::collections::hash_map::RandomState as HasherBuilder;
 
 use crate::execution::entry_point::CallInfo;
 use crate::stdlib::collections::HashSet;
@@ -123,8 +124,9 @@ impl Decode for ResourcesMapping {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use parity_scale_codec::{Decode, Encode};
+
+    use super::*;
 
     #[test]
     fn resources_mapping_encoding_decoding() {

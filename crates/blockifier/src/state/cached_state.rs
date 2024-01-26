@@ -668,8 +668,9 @@ impl parity_scale_codec::Decode for CommitmentStateDiff {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use parity_scale_codec::{Decode, Encode};
+
+    use super::*;
 
     #[test]
     fn test_commitment_state_diff_encoding_decoding() {
