@@ -615,8 +615,9 @@ pub struct CommitmentStateDiff {
 #[cfg(feature = "parity-scale-codec")]
 impl parity_scale_codec::Encode for CommitmentStateDiff {
     fn size_hint(&self) -> usize {
-        self.address_to_class_hash.len()
-            * (core::mem::size_of::<ContractAddress>() + core::mem::size_of::<ClassHash>())
+        (4 + self.storage_updates.len()) // Lengths of vectors.
+            + self.address_to_class_hash.len()
+                * (core::mem::size_of::<ContractAddress>() + core::mem::size_of::<ClassHash>())
             + self.address_to_nonce.len()
                 * (core::mem::size_of::<ContractAddress>() + core::mem::size_of::<Nonce>())
             + self.class_hash_to_compiled_class_hash.len()
@@ -666,7 +667,7 @@ impl parity_scale_codec::Decode for CommitmentStateDiff {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "std"), feature = "parity-scale-codec"))]
 mod tests {
     use parity_scale_codec::{Decode, Encode};
 
@@ -704,11 +705,9 @@ mod tests {
         };
 
         let encoded = commitment_state_diff.encode();
-        #[cfg(feature = "std")]
         println!("Encoded: {:?}", encoded);
 
         let decoded = CommitmentStateDiff::decode(&mut &encoded[..]).unwrap();
-        #[cfg(feature = "std")]
         println!("Decoded: {:?}", decoded);
 
         assert_eq!(commitment_state_diff, decoded);

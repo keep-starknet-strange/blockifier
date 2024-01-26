@@ -104,7 +104,7 @@ pub struct ResourcesMapping(pub IndexMap<String, u64, HasherBuilder>);
 #[cfg(feature = "parity-scale-codec")]
 impl Encode for ResourcesMapping {
     fn size_hint(&self) -> usize {
-        self.0.len() * (core::mem::size_of::<String>() + core::mem::size_of::<u64>())
+        1 + self.0.len() * core::mem::size_of::<u64>()
     }
 
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -122,7 +122,7 @@ impl Decode for ResourcesMapping {
     }
 }
 
-#[cfg(all(test, not(feature = "std")))]
+#[cfg(all(test, not(feature = "std"), feature = "parity-scale-codec"))]
 mod tests {
     use parity_scale_codec::{Decode, Encode};
 
@@ -139,7 +139,6 @@ mod tests {
         let resources_mapping = ResourcesMapping(map);
 
         let encoded = resources_mapping.encode();
-        #[cfg(feature = "std")]
         println!("Encoded: {:?}", encoded);
 
         let decoded = ResourcesMapping::decode(&mut &encoded[..]).expect("Decoding failed");
