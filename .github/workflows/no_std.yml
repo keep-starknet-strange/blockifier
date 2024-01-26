@@ -20,7 +20,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           components: rustfmt, clippy
-          toolchain: nightly-2023-07-05
+          toolchain: nightly-2024-01-20
       - uses: Swatinem/rust-cache@v2
       - run: scripts/rust_fmt.sh --check
       - run: scripts/clippy.sh
@@ -43,7 +43,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         name: "Rust Toolchain Setup"
         with:
-          toolchain: nightly-2023-07-05
+          toolchain: nightly-2024-01-20
       - uses: Swatinem/rust-cache@v2
         id: "cache-cargo"
       - if: ${{ steps.cache-cargo.outputs.cache-hit != 'true' }}
@@ -51,4 +51,4 @@ jobs:
         run: |
           cargo install cargo-udeps && cargo udeps --no-default-features --features "parity-scale-codec"
         env:
-          RUSTUP_TOOLCHAIN: nightly-2023-07-05
+          RUSTUP_TOOLCHAIN: nightly-2024-01-20
