@@ -625,12 +625,18 @@ impl parity_scale_codec::Encode for CommitmentStateDiff {
     }
 
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        parity_scale_codec::Compact(self.address_to_class_hash.len() as u64).encode_to(dest);
         self.address_to_class_hash.iter().for_each(|v| v.encode_to(dest));
+        parity_scale_codec::Compact(self.address_to_nonce.len() as u64).encode_to(dest);
         self.address_to_nonce.iter().for_each(|v| v.encode_to(dest));
+        parity_scale_codec::Compact(self.storage_updates.len() as u64).encode_to(dest);
         self.storage_updates.iter().for_each(|(address, idx_map)| {
             address.encode_to(dest);
+            parity_scale_codec::Compact(idx_map.len() as u64).encode_to(dest);
             idx_map.iter().for_each(|v| v.encode_to(dest));
         });
+        parity_scale_codec::Compact(self.class_hash_to_compiled_class_hash.len() as u64)
+            .encode_to(dest);
         self.class_hash_to_compiled_class_hash.iter().for_each(|v| v.encode_to(dest));
     }
 }
@@ -657,6 +663,52 @@ impl parity_scale_codec::Decode for CommitmentStateDiff {
                 .collect(),
             class_hash_to_compiled_class_hash: res.3.into_iter().collect(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use parity_scale_codec::{Decode, Encode};
+
+    #[test]
+    fn test_commitment_state_diff_encoding_decoding() {
+        let mut address_to_class_hash = IndexMap::new();
+        address_to_class_hash.insert(ContractAddress::from(1_u32), ClassHash::default());
+        address_to_class_hash.insert(ContractAddress::from(3_u32), ClassHash::default());
+
+        let mut address_to_nonce = IndexMap::new();
+        address_to_nonce.insert(ContractAddress::from(5_u32), Nonce::default());
+        address_to_nonce.insert(ContractAddress::from(7_u32), Nonce::default());
+
+        let mut storage_updates = IndexMap::new();
+        let mut storage_updates_1 = IndexMap::new();
+        storage_updates_1.insert(StorageKey::from(9_u32), StarkFelt::from(1_u32));
+        storage_updates_1.insert(StorageKey::from(11_u32), StarkFelt::from(12_u32));
+        storage_updates.insert(ContractAddress::from(13_u32), storage_updates_1);
+        let mut storage_updates_2 = IndexMap::new();
+        storage_updates_2.insert(StorageKey::from(14_u32), StarkFelt::from(15_u32));
+        storage_updates_2.insert(StorageKey::from(16_u32), StarkFelt::from(17_u32));
+        storage_updates.insert(ContractAddress::from(18_u32), storage_updates_2);
+
+        let mut class_hash_to_compiled_class_hash = IndexMap::new();
+        class_hash_to_compiled_class_hash
+            .insert(ClassHash::default(), CompiledClassHash::default());
+
+        let commitment_state_diff = CommitmentStateDiff {
+            address_to_class_hash,
+            address_to_nonce,
+            storage_updates,
+            class_hash_to_compiled_class_hash,
+        };
+
+        let encoded = commitment_state_diff.encode();
+        println!("Encoded: {:?}", encoded);
+
+        let decoded = CommitmentStateDiff::decode(&mut &encoded[..]).unwrap();
+        println!("Decoded: {:?}", decoded);
+
+        assert_eq!(commitment_state_diff, decoded);
     }
 }
 

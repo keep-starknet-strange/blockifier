@@ -103,11 +103,12 @@ pub struct ResourcesMapping(pub IndexMap<String, u64, HasherBuilder>);
 #[cfg(feature = "parity-scale-codec")]
 impl Encode for ResourcesMapping {
     fn size_hint(&self) -> usize {
-        self.0.len() * core::mem::size_of::<u64>()
+        self.0.len() * (core::mem::size_of::<String>() + core::mem::size_of::<u64>())
     }
 
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
-        self.0.iter().for_each(|v| v.encode_to(dest))
+        parity_scale_codec::Compact(self.0.len() as u64).encode_to(dest);
+        self.0.iter().for_each(|v| v.encode_to(dest));
     }
 }
 
@@ -117,5 +118,27 @@ impl Decode for ResourcesMapping {
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
         Ok(ResourcesMapping(IndexMap::from_iter(<Vec<(String, u64)>>::decode(input)?)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use parity_scale_codec::{Decode, Encode};
+
+    #[test]
+    fn resources_mapping_encoding_decoding() {
+        let map = IndexMap::from([
+            ("l1_gas_usage".to_string(), 21000),
+            ("l2_gas_usage".to_string(), 420),
+            ("n_steps".to_string(), 300000),
+        ]);
+        let resources_mapping = ResourcesMapping(map);
+
+        let encoded = resources_mapping.encode();
+        println!("Encoded: {:?}", encoded);
+        let decoded = ResourcesMapping::decode(&mut &encoded[..]).expect("Decoding failed");
+
+        assert_eq!(resources_mapping, decoded);
     }
 }
