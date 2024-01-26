@@ -139,6 +139,7 @@ mod tests {
         let resources_mapping = ResourcesMapping(map);
 
         let encoded = resources_mapping.encode();
+        #[cfg(feature = "std")]
         println!("Encoded: {:?}", encoded);
 
         let decoded = ResourcesMapping::decode(&mut &encoded[..]).expect("Decoding failed");

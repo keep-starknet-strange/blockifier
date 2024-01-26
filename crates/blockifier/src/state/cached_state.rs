@@ -705,9 +705,11 @@ mod tests {
         };
 
         let encoded = commitment_state_diff.encode();
+        #[cfg(feature = "std")]
         println!("Encoded: {:?}", encoded);
 
         let decoded = CommitmentStateDiff::decode(&mut &encoded[..]).unwrap();
+        #[cfg(feature = "std")]
         println!("Decoded: {:?}", decoded);
 
         assert_eq!(commitment_state_diff, decoded);
