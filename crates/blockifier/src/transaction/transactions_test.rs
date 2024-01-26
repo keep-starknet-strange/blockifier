@@ -374,7 +374,7 @@ fn test_invoke_tx(
         execute_call_info: expected_execute_call_info,
         fee_transfer_call_info: expected_fee_transfer_call_info,
         actual_fee: expected_actual_fee,
-        actual_resources: ResourcesMapping(IndexMap::from([
+        actual_resources: ResourcesMapping(IndexMap::from_iter([
             // 1 modified contract, 1 storage update (sender balance).
             (abi_constants::GAS_USAGE.to_string(), (2 + 2) * 612),
             (HASH_BUILTIN_NAME.to_string(), 16),
@@ -644,7 +644,7 @@ fn test_declare_tx(
         fee_transfer_call_info: expected_fee_transfer_call_info,
         actual_fee: expected_actual_fee,
         revert_error: None,
-        actual_resources: ResourcesMapping(IndexMap::from([
+        actual_resources: ResourcesMapping(IndexMap::from_iter([
             // 1 modified contract, 1 storage update (sender balance).
             (abi_constants::GAS_USAGE.to_string(), (2 + 2) * 612),
             (HASH_BUILTIN_NAME.to_string(), 15),
@@ -706,7 +706,7 @@ fn test_declare_tx_v2() {
     );
     let actual_execution_info = account_tx.execute(state, block_context, true, true).unwrap();
 
-    let expected_actual_resources = ResourcesMapping(IndexMap::from([
+    let expected_actual_resources = ResourcesMapping(IndexMap::from_iter([
         // 1 modified contract, 1 storage update (sender balance) + 1 compiled_class_hash update.
         (abi_constants::GAS_USAGE.to_string(), (2 + 2 + 2) * 612),
         (HASH_BUILTIN_NAME.to_string(), 15),
@@ -834,7 +834,7 @@ fn test_deploy_account_tx(
         fee_transfer_call_info: expected_fee_transfer_call_info,
         actual_fee: expected_actual_fee,
         revert_error: None,
-        actual_resources: ResourcesMapping(IndexMap::from([
+        actual_resources: ResourcesMapping(IndexMap::from_iter([
             // 1 modified contract, 1 storage update (sender balance) + 1 class_hash update.
             (abi_constants::GAS_USAGE.to_string(), (2 + 2 + 1) * 612),
             (HASH_BUILTIN_NAME.to_string(), 23),

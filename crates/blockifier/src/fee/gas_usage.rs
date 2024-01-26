@@ -172,7 +172,7 @@ pub fn estimate_minimal_fee(
             })
         }
     };
-    let resources = ResourcesMapping(IndexMap::from([
+    let resources = ResourcesMapping(IndexMap::from_iter([
         (
             constants::GAS_USAGE.to_string(),
             (gas_for_type * eth_gas_constants::SHARP_GAS_PER_MEMORY_WORD) as u64,

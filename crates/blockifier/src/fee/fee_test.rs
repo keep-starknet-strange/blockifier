@@ -15,7 +15,7 @@ use crate::transaction::errors::TransactionExecutionError;
 use crate::transaction::objects::ResourcesMapping;
 
 fn get_vm_resource_usage() -> ResourcesMapping {
-    ResourcesMapping(IndexMap::from([
+    ResourcesMapping(IndexMap::from_iter([
         (constants::N_STEPS_RESOURCE.to_string(), 1800),
         (HASH_BUILTIN_NAME.to_string(), 10),
         (RANGE_CHECK_BUILTIN_NAME.to_string(), 24),

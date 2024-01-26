@@ -674,25 +674,25 @@ mod tests {
 
     #[test]
     fn test_commitment_state_diff_encoding_decoding() {
-        let mut address_to_class_hash = IndexMap::new();
+        let mut address_to_class_hash = IndexMap::default();
         address_to_class_hash.insert(ContractAddress::from(1_u32), ClassHash::default());
         address_to_class_hash.insert(ContractAddress::from(3_u32), ClassHash::default());
 
-        let mut address_to_nonce = IndexMap::new();
+        let mut address_to_nonce = IndexMap::default();
         address_to_nonce.insert(ContractAddress::from(5_u32), Nonce::default());
         address_to_nonce.insert(ContractAddress::from(7_u32), Nonce::default());
 
-        let mut storage_updates = IndexMap::new();
-        let mut storage_updates_1 = IndexMap::new();
+        let mut storage_updates = IndexMap::default();
+        let mut storage_updates_1 = IndexMap::default();
         storage_updates_1.insert(StorageKey::from(9_u32), StarkFelt::from(1_u32));
         storage_updates_1.insert(StorageKey::from(11_u32), StarkFelt::from(12_u32));
         storage_updates.insert(ContractAddress::from(13_u32), storage_updates_1);
-        let mut storage_updates_2 = IndexMap::new();
+        let mut storage_updates_2 = IndexMap::default();
         storage_updates_2.insert(StorageKey::from(14_u32), StarkFelt::from(15_u32));
         storage_updates_2.insert(StorageKey::from(16_u32), StarkFelt::from(17_u32));
         storage_updates.insert(ContractAddress::from(18_u32), storage_updates_2);
 
-        let mut class_hash_to_compiled_class_hash = IndexMap::new();
+        let mut class_hash_to_compiled_class_hash = IndexMap::default();
         class_hash_to_compiled_class_hash
             .insert(ClassHash::default(), CompiledClassHash::default());
 
@@ -704,9 +704,11 @@ mod tests {
         };
 
         let encoded = commitment_state_diff.encode();
+        #[cfg(feature = "std")]
         println!("Encoded: {:?}", encoded);
 
         let decoded = CommitmentStateDiff::decode(&mut &encoded[..]).unwrap();
+        #[cfg(feature = "std")]
         println!("Decoded: {:?}", decoded);
 
         assert_eq!(commitment_state_diff, decoded);

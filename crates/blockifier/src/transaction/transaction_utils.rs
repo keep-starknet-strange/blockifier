@@ -66,7 +66,7 @@ pub fn calculate_tx_resources(
             .remove(SEGMENT_ARENA_BUILTIN_NAME)
             .unwrap_or_default();
 
-    let mut tx_resources = IndexMap::from([
+    let mut tx_resources = IndexMap::from_iter([
         (constants::GAS_USAGE.to_string(), l1_gas_usage as u64),
         (constants::N_STEPS_RESOURCE.to_string(), (n_steps + total_vm_usage.n_memory_holes) as u64),
     ]);

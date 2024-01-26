@@ -122,23 +122,26 @@ impl Decode for ResourcesMapping {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "std")))]
 mod tests {
     use parity_scale_codec::{Decode, Encode};
 
     use super::*;
+    use crate::abi::constants::{GAS_USAGE, N_STEPS_RESOURCE};
+    use crate::without_std::string::ToString;
 
     #[test]
     fn resources_mapping_encoding_decoding() {
-        let map = IndexMap::from([
-            ("l1_gas_usage".to_string(), 21000),
-            ("l2_gas_usage".to_string(), 420),
-            ("n_steps".to_string(), 300000),
+        let map = IndexMap::from_iter([
+            (GAS_USAGE.to_string(), 21000),
+            (N_STEPS_RESOURCE.to_string(), 300000),
         ]);
         let resources_mapping = ResourcesMapping(map);
 
         let encoded = resources_mapping.encode();
+        #[cfg(feature = "std")]
         println!("Encoded: {:?}", encoded);
+
         let decoded = ResourcesMapping::decode(&mut &encoded[..]).expect("Decoding failed");
 
         assert_eq!(resources_mapping, decoded);
