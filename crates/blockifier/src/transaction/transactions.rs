@@ -353,3 +353,55 @@ impl<S: State> Executable<S> for L1HandlerTransaction {
             .map_err(TransactionExecutionError::ExecutionError)
     }
 }
+
+#[derive(Debug, Clone)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
+)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
+pub struct DeployTransaction {
+    pub tx: starknet_api::transaction::DeployTransaction,
+    pub tx_hash: TransactionHash,
+    pub contract_address: ContractAddress,
+}
+
+impl DeployTransaction {
+    implement_inner_tx_getters!(
+        (class_hash, ClassHash),
+        (contract_address_salt, ContractAddressSalt),
+        (version, TransactionVersion),
+        (constructor_calldata, Calldata)
+    );
+}
+
+impl<S: State> Executable<S> for DeployTransaction {
+    fn run_execute(
+        &self,
+        state: &mut S,
+        resources: &mut ExecutionResources,
+        context: &mut EntryPointExecutionContext,
+        remaining_gas: &mut u64,
+    ) -> TransactionExecutionResult<Option<CallInfo>> {
+        let ctor_context = ConstructorContext {
+            class_hash: self.class_hash(),
+            code_address: Some(self.contract_address),
+            storage_address: self.contract_address,
+            caller_address: ContractAddress::default(),
+        };
+        let deployment_result = execute_deployment(
+            state,
+            resources,
+            context,
+            ctor_context,
+            self.constructor_calldata(),
+            *remaining_gas,
+        );
+        let call_info = deployment_result
+            .map_err(TransactionExecutionError::ContractConstructorExecutionFailed)?;
+        update_remaining_gas(remaining_gas, &call_info);
+        verify_no_calls_to_other_contracts(&call_info, String::from("a contract constructor"))?;
+
+        Ok(Some(call_info))
+    }
+}
