@@ -676,12 +676,14 @@ mod tests {
     #[test]
     fn test_commitment_state_diff_encoding_decoding() {
         let mut address_to_class_hash = IndexMap::default();
-        address_to_class_hash.insert(ContractAddress::from(1_u32), ClassHash::default());
-        address_to_class_hash.insert(ContractAddress::from(3_u32), ClassHash::default());
+        address_to_class_hash
+            .insert(ContractAddress::from(1_u32), ClassHash(StarkFelt::from(2_u32)));
+        address_to_class_hash
+            .insert(ContractAddress::from(3_u32), ClassHash(StarkFelt::from(4_u32)));
 
         let mut address_to_nonce = IndexMap::default();
-        address_to_nonce.insert(ContractAddress::from(5_u32), Nonce::default());
-        address_to_nonce.insert(ContractAddress::from(7_u32), Nonce::default());
+        address_to_nonce.insert(ContractAddress::from(5_u32), Nonce(StarkFelt::from(0_u32)));
+        address_to_nonce.insert(ContractAddress::from(7_u32), Nonce(StarkFelt::from(1_u32)));
 
         let mut storage_updates = IndexMap::default();
         let mut storage_updates_1 = IndexMap::default();
@@ -695,7 +697,7 @@ mod tests {
 
         let mut class_hash_to_compiled_class_hash = IndexMap::default();
         class_hash_to_compiled_class_hash
-            .insert(ClassHash::default(), CompiledClassHash::default());
+            .insert(ClassHash(StarkFelt::from(8_u32)), CompiledClassHash(StarkFelt::from(10_u32)));
 
         let commitment_state_diff = CommitmentStateDiff {
             address_to_class_hash,

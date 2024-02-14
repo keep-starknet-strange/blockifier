@@ -334,6 +334,80 @@ pub struct CallInfo {
     pub accessed_storage_keys: HashSet<StorageKey>,
 }
 
+#[cfg(all(test, not(feature = "std"), feature = "parity-scale-codec"))]
+mod tests {
+    use parity_scale_codec::{Decode, Encode};
+    use starknet_api::api_core::PatriciaKey;
+
+    use super::*;
+
+    #[test]
+    fn call_info_encoding_decoding() {
+        let inner_call_info = CallInfo {
+            call: CallEntryPoint {
+                class_hash: Some(ClassHash(StarkFelt::from(1_u32))),
+                code_address: Some(ContractAddress(PatriciaKey(StarkFelt::from(2_u32)))),
+                entry_point_type: EntryPointType::External,
+                entry_point_selector: EntryPointSelector(StarkFelt::from(3_u32)),
+                calldata: Calldata(vec![StarkFelt::from(4_u32)].into()),
+                storage_address: ContractAddress(PatriciaKey(StarkFelt::from(4_u32))),
+                caller_address: ContractAddress(PatriciaKey(StarkFelt::from(5_u32))),
+                call_type: CallType::Call,
+                initial_gas: 210,
+            },
+            execution: CallExecution::default(),
+            vm_resources: VmExecutionResources {
+                n_steps: 12,
+                n_memory_holes: 13,
+                builtin_instance_counter: HashMap::from_iter(vec![(
+                    "keccack".to_string(),
+                    14_usize,
+                )]),
+            },
+            inner_calls: vec![],
+            storage_read_values: vec![StarkFelt::from(15_u32)],
+            accessed_storage_keys: HashSet::from_iter(vec![StorageKey(PatriciaKey(
+                StarkFelt::from(16_u32),
+            ))]),
+        };
+
+        let call_info = CallInfo {
+            call: CallEntryPoint {
+                class_hash: Some(ClassHash(StarkFelt::from(2_u32))),
+                code_address: Some(ContractAddress(PatriciaKey(StarkFelt::from(3_u32)))),
+                entry_point_type: EntryPointType::External,
+                entry_point_selector: EntryPointSelector(StarkFelt::from(4_u32)),
+                calldata: Calldata(vec![StarkFelt::from(5_u32)].into()),
+                storage_address: ContractAddress(PatriciaKey(StarkFelt::from(5_u32))),
+                caller_address: ContractAddress(PatriciaKey(StarkFelt::from(6_u32))),
+                call_type: CallType::Call,
+                initial_gas: 420,
+            },
+            execution: CallExecution::default(),
+            vm_resources: VmExecutionResources {
+                n_steps: 7,
+                n_memory_holes: 8,
+                builtin_instance_counter: HashMap::from_iter(vec![(
+                    "keccack".to_string(),
+                    34_usize,
+                )]),
+            },
+            inner_calls: vec![inner_call_info],
+            storage_read_values: vec![StarkFelt::from(8_u32)],
+            accessed_storage_keys: HashSet::from_iter(vec![StorageKey(PatriciaKey(
+                StarkFelt::from(9_u32),
+            ))]),
+        };
+
+        let encoded = call_info.encode();
+        #[cfg(feature = "std")]
+        println!("Encoded: {:?}", encoded);
+
+        let decoded = CallInfo::decode(&mut &encoded[..]).expect("Decoding failed");
+        assert_eq!(call_info, decoded);
+    }
+}
+
 impl CallInfo {
     /// Returns the set of class hashes that were executed during this call execution.
     // TODO: Add unit test for this method
