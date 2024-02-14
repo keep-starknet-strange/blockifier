@@ -670,6 +670,9 @@ impl parity_scale_codec::Decode for CommitmentStateDiff {
 #[cfg(all(test, not(feature = "std"), feature = "parity-scale-codec"))]
 mod tests {
     use parity_scale_codec::{Decode, Encode};
+    use starknet_api::api_core::PatriciaKey;
+    use starknet_api::hash::StarkHash;
+    use starknet_api::{patricia_key, stark_felt};
 
     use super::*;
 
@@ -698,6 +701,59 @@ mod tests {
         let mut class_hash_to_compiled_class_hash = IndexMap::default();
         class_hash_to_compiled_class_hash
             .insert(ClassHash(StarkFelt::from(8_u32)), CompiledClassHash(StarkFelt::from(10_u32)));
+
+        let commitment_state_diff = CommitmentStateDiff {
+            address_to_class_hash,
+            address_to_nonce,
+            storage_updates,
+            class_hash_to_compiled_class_hash,
+        };
+
+        let encoded = commitment_state_diff.encode();
+        #[cfg(feature = "std")]
+        println!("Encoded: {:?}", encoded);
+
+        let decoded = CommitmentStateDiff::decode(&mut &encoded[..]).unwrap();
+        #[cfg(feature = "std")]
+        println!("Decoded: {:?}", decoded);
+
+        assert_eq!(commitment_state_diff, decoded);
+    }
+
+    /// Test for this exact input
+    /// CommitmentStateDiff { address_to_class_hash: {},
+    /// address_to_nonce: {ContractAddress(PatriciaKey(StarkFelt("0x0000000000000000000000000000000000000000000000000000000000000001"))): Nonce(StarkFelt("0x0000000000000000000000000000000000000000000000000000000000000001"))},
+    /// storage_updates: {ContractAddress(PatriciaKey(StarkFelt("0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"))): {StorageKey(PatriciaKey(StarkFelt("0x07b62949c85c6af8a50c11c22927f9302f7a2e40bc93b4c988415915b0f97f09"))): StarkFelt("0x00000000000000000000000000000000fffffffffffffffffffffffffffffe5b"),
+    /// StorageKey(PatriciaKey(StarkFelt("0x0011a82fea6c862e4749b7ff40e1f9f13b2d002a7df56eebf0ea48eb02f96e34"))): StarkFelt("0x00000000000000000000000000000000000000000000000000000000000001a4")}},
+    /// class_hash_to_compiled_class_hash: {} })
+    #[test]
+    fn test_exact_state_diff() {
+        let address_to_class_hash = IndexMap::default();
+        let mut address_to_nonce = IndexMap::default();
+        address_to_nonce.insert(ContractAddress::from(1_u32), Nonce(StarkFelt::from(1_u32)));
+
+        let mut storage_updates = IndexMap::default();
+        let mut storage_updates_1 = IndexMap::default();
+        storage_updates_1.insert(
+            StorageKey(patricia_key!(
+                "0x07b62949c85c6af8a50c11c22927f9302f7a2e40bc93b4c988415915b0f97f09"
+            )),
+            stark_felt!("0x00000000000000000000000000000000fffffffffffffffffffffffffffffe5b"),
+        );
+        storage_updates_1.insert(
+            StorageKey(patricia_key!(
+                "0x0011a82fea6c862e4749b7ff40e1f9f13b2d002a7df56eebf0ea48eb02f96e34"
+            )),
+            stark_felt!("0x00000000000000000000000000000000000000000000000000000000000001a4"),
+        );
+        storage_updates.insert(
+            ContractAddress(patricia_key!(
+                "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"
+            )),
+            storage_updates_1,
+        );
+
+        let class_hash_to_compiled_class_hash = IndexMap::default();
 
         let commitment_state_diff = CommitmentStateDiff {
             address_to_class_hash,

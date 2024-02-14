@@ -71,6 +71,34 @@ impl scale_info::TypeInfo for TransactionExecutionInfo {
     }
 }
 
+#[cfg(all(test, not(feature = "std"), feature = "parity-scale-codec"))]
+mod new_tests {
+    use crate::alloc::string::ToString;
+    use parity_scale_codec::{Decode, Encode};
+
+    use super::*;
+
+    #[test]
+    fn transaction_execution_info_encoding_decoding() {
+        let transaction_execution_info = TransactionExecutionInfo {
+            validate_call_info: Some(CallInfo::default()),
+            execute_call_info: Some(CallInfo::default()),
+            fee_transfer_call_info: Some(CallInfo::default()),
+            actual_fee: Fee(100),
+            actual_resources: ResourcesMapping::default(),
+            revert_error: Some("Revert error".to_string()),
+        };
+
+        let encoded = transaction_execution_info.encode();
+        #[cfg(feature = "std")]
+        println!("Encoded: {:?}", encoded);
+
+        let decoded = TransactionExecutionInfo::decode(&mut &encoded[..]).expect("Decoding failed");
+
+        assert_eq!(transaction_execution_info, decoded);
+    }
+}
+
 impl TransactionExecutionInfo {
     pub fn non_optional_call_infos(&self) -> Vec<&CallInfo> {
         let call_infos = vec![
