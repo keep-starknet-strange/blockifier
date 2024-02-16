@@ -102,7 +102,7 @@ pub fn py_declare(
     py_tx: &PyAny,
     py_class_info: PyClassInfo,
 ) -> NativeBlockifierResult<DeclareTransaction> {
-    let version = usize::try_from(py_attr::<PyFelt>(py_tx, "version")?.0)?;
+    let version = u64::try_from(py_attr::<PyFelt>(py_tx, "version")?.0)?;
     let tx = match version {
         0 => {
             let py_declare_tx: PyDeclareTransactionV0V1 = py_tx.extract()?;
@@ -126,7 +126,7 @@ pub fn py_declare(
         }
         _ => Err(NativeBlockifierInputError::UnsupportedTransactionVersion {
             tx_type: TransactionType::Declare,
-            version,
+            version: version as usize,
         }),
     }?;
     let tx_hash = TransactionHash(py_attr::<PyFelt>(py_tx, "hash_value")?.0);

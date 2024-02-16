@@ -72,7 +72,7 @@ impl TryFrom<PyDeployAccountTransactionV3> for DeployAccountTransactionV3 {
 }
 
 pub fn py_deploy_account(py_tx: &PyAny) -> NativeBlockifierResult<DeployAccountTransaction> {
-    let version = usize::try_from(py_attr::<PyFelt>(py_tx, "version")?.0)?;
+    let version = u64::try_from(py_attr::<PyFelt>(py_tx, "version")?.0)?;
     let tx = match version {
         1 => {
             let py_deploy_account_tx: PyDeployAccountTransactionV1 = py_tx.extract()?;
@@ -86,7 +86,7 @@ pub fn py_deploy_account(py_tx: &PyAny) -> NativeBlockifierResult<DeployAccountT
         }
         _ => Err(NativeBlockifierInputError::UnsupportedTransactionVersion {
             tx_type: TransactionType::DeployAccount,
-            version,
+            version: version as usize,
         }),
     }?;
 

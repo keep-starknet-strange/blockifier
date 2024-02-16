@@ -20,7 +20,7 @@ pub fn raise_error_for_testing() -> NativeBlockifierResult<()> {
 pub fn estimate_casm_hash_computation_resources_for_testing_single(
     bytecode_segment_lengths: usize,
 ) -> PyResult<PyExecutionResources> {
-    let node = NestedIntList::Leaf(bytecode_segment_lengths);
+    let node = NestedIntList::Leaf(bytecode_segment_lengths as u64);
     Ok(estimate_casm_hash_computation_resources(&node).into())
 }
 
@@ -31,7 +31,7 @@ pub fn estimate_casm_hash_computation_resources_for_testing_list(
     bytecode_segment_lengths: Vec<usize>,
 ) -> PyResult<PyExecutionResources> {
     let node = NestedIntList::Node(
-        bytecode_segment_lengths.into_iter().map(NestedIntList::Leaf).collect(),
+        bytecode_segment_lengths.into_iter().map(|v| NestedIntList::Leaf(v as u64)).collect(),
     );
     Ok(estimate_casm_hash_computation_resources(&node).into())
 }

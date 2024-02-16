@@ -35,7 +35,12 @@ impl From<TransactionExecutionInfo> for PyTransactionExecutionInfo {
             execute_call_info: info.execute_call_info.map(PyCallInfo::from),
             fee_transfer_call_info: info.fee_transfer_call_info.map(PyCallInfo::from),
             actual_fee: info.actual_fee.0,
-            actual_resources: info.actual_resources.0,
+            actual_resources: info
+                .actual_resources
+                .0
+                .into_iter()
+                .map(|(k, v)| (k, v.try_into().unwrap()))
+                .collect(),
             revert_error: info.revert_error,
         }
     }

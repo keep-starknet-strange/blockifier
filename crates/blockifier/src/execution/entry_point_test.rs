@@ -26,8 +26,8 @@ use crate::transaction::test_utils::{block_context, run_invoke_tx};
 use crate::versioned_constants::VersionedConstants;
 use crate::{invoke_tx_args, retdata};
 
-const INNER_CALL_CONTRACT_IN_CALL_CHAIN_OFFSET: usize = 65;
-const ACCOUNT_PC_OFFSET: usize = 82;
+const INNER_CALL_CONTRACT_IN_CALL_CHAIN_OFFSET: u64 = 65;
+const ACCOUNT_PC_OFFSET: u64 = 82;
 
 #[test]
 fn test_call_info_iteration() {
@@ -546,14 +546,12 @@ fn test_cairo1_entry_point_segment_arena() {
         ..trivial_external_entry_point_new(test_contract)
     };
 
-    assert!(
-        entry_point_call
-            .execute_directly(&mut state)
-            .unwrap()
-            .resources
-            .builtin_instance_counter
-            .contains_key(BuiltinName::segment_arena.name())
-    );
+    assert!(entry_point_call
+        .execute_directly(&mut state)
+        .unwrap()
+        .resources
+        .builtin_instance_counter
+        .contains_key(BuiltinName::segment_arena.name()));
 }
 
 /// Fetch PC locations from the compiled contract to compute the expected PC locations in the

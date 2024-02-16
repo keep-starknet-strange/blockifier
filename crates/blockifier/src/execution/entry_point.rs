@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use cairo_vm::vm::runners::cairo_runner::{ExecutionResources, ResourceTracker, RunResources};
 use num_traits::{Inv, Zero};
+use parity_scale_codec::{Decode, Encode};
 use serde::Serialize;
 use starknet_api::core::{ClassHash, ContractAddress, EntryPointSelector};
 use starknet_api::deprecated_contract_class::EntryPointType;
@@ -33,14 +34,16 @@ pub const FAULTY_CLASS_HASH: &str =
 pub type EntryPointExecutionResult<T> = Result<T, EntryPointExecutionError>;
 
 /// Represents a the type of the call (used for debugging).
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq, Serialize, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum CallType {
     #[default]
     Call = 0,
     Delegate = 1,
 }
 /// Represents a call to an entry point of a Starknet contract.
-#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct CallEntryPoint {
     // The class hash is not given if it can be deduced from the storage address.
     pub class_hash: Option<ClassHash>,

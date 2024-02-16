@@ -1,6 +1,7 @@
 use cairo_felt::Felt252;
 use cairo_vm::types::relocatable::Relocatable;
 use cairo_vm::vm::vm_core::VirtualMachine;
+use parity_scale_codec::{Decode, Encode};
 use serde::Deserialize;
 use starknet_api::block::{BlockNumber, BlockTimestamp};
 use starknet_api::core::{
@@ -35,7 +36,8 @@ pub mod hint_processor;
 pub type DeprecatedSyscallResult<T> = Result<T, DeprecatedSyscallExecutionError>;
 pub type WriteResponseResult = DeprecatedSyscallResult<()>;
 
-#[derive(Clone, Copy, Debug, Deserialize, EnumIter, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, EnumIter, Eq, Hash, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum DeprecatedSyscallSelector {
     CallContract,
     DelegateCall,

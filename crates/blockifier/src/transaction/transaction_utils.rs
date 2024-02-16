@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
+use indexmap::IndexMap;
 use starknet_api::transaction::TransactionVersion;
 
 use super::objects::StarknetResources;
@@ -11,7 +10,6 @@ use crate::fee::gas_usage::get_onchain_data_segment_length;
 use crate::transaction::errors::TransactionExecutionError;
 use crate::transaction::objects::{ResourcesMapping, TransactionExecutionResult};
 use crate::transaction::transaction_types::TransactionType;
-use crate::utils::usize_from_u128;
 use crate::versioned_constants::VersionedConstants;
 
 /// Calculates the total resources needed to include the transaction in a Starknet block as
@@ -25,10 +23,8 @@ pub fn calculate_tx_resources(
     use_kzg_da: bool,
 ) -> TransactionExecutionResult<ResourcesMapping> {
     let starknet_gas_vector = starknet_resources.to_gas_vector(versioned_constants, use_kzg_da);
-    let l1_gas_usage = usize_from_u128(starknet_gas_vector.l1_gas)
-        .expect("This conversion should not fail as the value is a converted usize.");
-    let l1_blob_gas_usage = usize_from_u128(starknet_gas_vector.l1_data_gas)
-        .expect("This conversion should not fail as the value is a converted usize.");
+    let l1_gas_usage = starknet_gas_vector.l1_gas;
+    let l1_blob_gas_usage = starknet_gas_vector.l1_data_gas;
     // Add additional Cairo resources needed for the OS to run the transaction.
     let data_segment_length =
         get_onchain_data_segment_length(&starknet_resources.state_changes_count);
@@ -41,15 +37,17 @@ pub fn calculate_tx_resources(
         )?;
     let total_vm_usage = total_vm_usage.filter_unused_builtins();
 
-    let mut tx_resources = HashMap::from([
+    let mut tx_resources = IndexMap::from([
         (constants::L1_GAS_USAGE.to_string(), l1_gas_usage),
         (constants::BLOB_GAS_USAGE.to_string(), l1_blob_gas_usage),
         (
             constants::N_STEPS_RESOURCE.to_string(),
-            total_vm_usage.n_steps + total_vm_usage.n_memory_holes,
+            (total_vm_usage.n_steps + total_vm_usage.n_memory_holes) as u128,
         ),
     ]);
-    tx_resources.extend(total_vm_usage.builtin_instance_counter);
+    tx_resources.extend(
+        total_vm_usage.builtin_instance_counter.into_iter().map(|(k, v)| (k.clone(), v as u128)),
+    );
 
     Ok(ResourcesMapping(tx_resources))
 }

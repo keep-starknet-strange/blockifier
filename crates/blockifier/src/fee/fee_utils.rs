@@ -20,7 +20,7 @@ use crate::versioned_constants::VersionedConstants;
 #[path = "fee_test.rs"]
 pub mod test;
 
-pub fn extract_l1_gas_and_vm_usage(resources: &ResourcesMapping) -> (usize, ResourcesMapping) {
+pub fn extract_l1_gas_and_vm_usage(resources: &ResourcesMapping) -> (u128, ResourcesMapping) {
     let mut vm_resource_usage = resources.0.clone();
     let l1_gas_usage = vm_resource_usage
         .remove(constants::L1_GAS_USAGE)
@@ -29,7 +29,7 @@ pub fn extract_l1_gas_and_vm_usage(resources: &ResourcesMapping) -> (usize, Reso
     (l1_gas_usage, ResourcesMapping(vm_resource_usage))
 }
 
-pub fn extract_l1_blob_gas_usage(resources: &ResourcesMapping) -> (usize, ResourcesMapping) {
+pub fn extract_l1_blob_gas_usage(resources: &ResourcesMapping) -> (u128, ResourcesMapping) {
     let mut vm_resource_usage = resources.0.clone();
     let l1_blob_gas_usage = vm_resource_usage
         .remove(constants::BLOB_GAS_USAGE)
@@ -38,7 +38,7 @@ pub fn extract_l1_blob_gas_usage(resources: &ResourcesMapping) -> (usize, Resour
     (l1_blob_gas_usage, ResourcesMapping(vm_resource_usage))
 }
 
-pub fn extract_n_steps(resources: &ResourcesMapping) -> (usize, ResourcesMapping) {
+pub fn extract_n_steps(resources: &ResourcesMapping) -> (u128, ResourcesMapping) {
     let mut vm_resource_usage = resources.0.clone();
     // The "segment arena" builtin is not part of SHARP (not in any proof layout).
     // Each instance requires approximately 10 steps in the OS.
@@ -102,15 +102,19 @@ pub fn calculate_tx_gas_vector(
     // Memory holes are always zero at this point, it's counted as n_steps when `resources` were
     // created.
     // TODO(Nimrod, 25/3/2024): Change function's input type to `ExecutionResources`.
-    let execution_resources =
-        ExecutionResources { n_steps, n_memory_holes: 0, builtin_instance_counter: vm_resources.0 };
+    let execution_resources = ExecutionResources {
+        n_steps: n_steps.try_into().unwrap(),
+        n_memory_holes: 0,
+        builtin_instance_counter: vm_resources
+            .0
+            .into_iter()
+            .map(|(k, v)| (k, v.try_into().unwrap()))
+            .collect(),
+    };
     let vm_usage_gas_vector =
         calculate_l1_gas_by_vm_usage(versioned_constants, &execution_resources)?;
 
-    Ok(GasVector {
-        l1_gas: u128_from_usize(l1_gas_usage),
-        l1_data_gas: u128_from_usize(l1_blob_gas_usage),
-    } + vm_usage_gas_vector)
+    Ok(GasVector { l1_gas: l1_gas_usage, l1_data_gas: l1_blob_gas_usage } + vm_usage_gas_vector)
 }
 
 /// Converts the gas vector to a fee.

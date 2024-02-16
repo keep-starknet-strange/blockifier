@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use crate::abi::constants;
 use crate::context::{BlockContext, TransactionContext};
@@ -10,7 +10,7 @@ use crate::transaction::account_transaction::AccountTransaction;
 use crate::transaction::objects::{
     GasVector, HasRelatedFeeType, ResourcesMapping, TransactionPreValidationResult,
 };
-use crate::utils::{u128_from_usize, usize_from_u128};
+use crate::utils::u128_from_usize;
 
 #[cfg(test)]
 #[path = "gas_usage_test.rs"]
@@ -206,17 +206,10 @@ pub fn estimate_minimal_gas_vector(
         versioned_constants.os_resources_for_tx_type(&tx.tx_type(), tx.calldata_length()).n_steps
             + versioned_constants.os_kzg_da_resources(data_segment_length).n_steps;
 
-    let resources = ResourcesMapping(HashMap::from([
-        (
-            constants::L1_GAS_USAGE.to_string(),
-            usize_from_u128(gas_cost).expect("Failed to convert L1 gas cost from u128 to usize."),
-        ),
-        (
-            constants::BLOB_GAS_USAGE.to_string(),
-            usize_from_u128(blob_gas_cost)
-                .expect("Failed to convert L1 blob gas cost from u128 to usize."),
-        ),
-        (constants::N_STEPS_RESOURCE.to_string(), os_steps_for_type),
+    let resources = ResourcesMapping(IndexMap::from([
+        (constants::L1_GAS_USAGE.to_string(), gas_cost),
+        (constants::BLOB_GAS_USAGE.to_string(), blob_gas_cost),
+        (constants::N_STEPS_RESOURCE.to_string(), os_steps_for_type as u128),
     ]));
 
     Ok(calculate_tx_gas_vector(&resources, versioned_constants)?)

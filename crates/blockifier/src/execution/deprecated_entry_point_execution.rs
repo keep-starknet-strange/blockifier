@@ -126,7 +126,7 @@ pub fn resolve_entry_point_pc(
                 if entry_point.selector
                     == EntryPointSelector(StarkHash::from(DEFAULT_ENTRY_POINT_SELECTOR))
                 {
-                    return Ok(entry_point.offset.0);
+                    return Ok(entry_point.offset.0 as usize);
                 } else {
                     return Err(PreExecutionError::EntryPointNotFound(call.entry_point_selector));
                 }
@@ -148,7 +148,7 @@ pub fn resolve_entry_point_pc(
     let entry_point = filtered_entry_points
         .first()
         .expect("The number of entry points with the given selector is exactly one.");
-    Ok(entry_point.offset.0)
+    Ok(entry_point.offset.0 as usize)
 }
 
 pub fn prepare_call_arguments(

@@ -324,7 +324,7 @@ impl<'a> DeprecatedSyscallHintProcessor<'a> {
 
     fn read_next_syscall_selector(
         &mut self,
-        vm: &mut VirtualMachine,
+        vm: &VirtualMachine,
     ) -> DeprecatedSyscallResult<StarkFelt> {
         let selector = stark_felt_from_ptr(vm, &mut self.syscall_ptr)?;
 
@@ -524,5 +524,5 @@ where
     let array_data_start_ptr = vm.get_relocatable(*ptr)?;
     *ptr = (*ptr + 1)?;
 
-    Ok(felt_range_from_ptr(vm, array_data_start_ptr, usize::try_from(array_size)?)?)
+    Ok(felt_range_from_ptr(vm, array_data_start_ptr, u64::try_from(array_size)? as usize)?)
 }

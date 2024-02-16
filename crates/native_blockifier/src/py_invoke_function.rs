@@ -97,7 +97,7 @@ impl TryFrom<PyInvokeTransactionV3> for InvokeTransactionV3 {
 }
 
 pub fn py_invoke_function(py_tx: &PyAny) -> NativeBlockifierResult<InvokeTransaction> {
-    let version = usize::try_from(py_attr::<PyFelt>(py_tx, "version")?.0)?;
+    let version = u64::try_from(py_attr::<PyFelt>(py_tx, "version")?.0)?;
     let tx = match version {
         0 => {
             let py_invoke_tx: PyInvokeTransactionV0 = py_tx.extract()?;
@@ -116,7 +116,7 @@ pub fn py_invoke_function(py_tx: &PyAny) -> NativeBlockifierResult<InvokeTransac
         }
         _ => Err(NativeBlockifierInputError::UnsupportedTransactionVersion {
             tx_type: TransactionType::InvokeFunction,
-            version,
+            version: version as usize,
         }),
     }?;
 

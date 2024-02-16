@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
@@ -16,6 +17,7 @@ use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::runners::builtin_runner::{HASH_BUILTIN_NAME, POSEIDON_BUILTIN_NAME};
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
 use itertools::Itertools;
+use parity_scale_codec::{Decode, Encode};
 use serde::de::Error as DeserializationError;
 use serde::{Deserialize, Deserializer};
 use starknet_api::core::EntryPointSelector;
@@ -43,7 +45,8 @@ pub mod test;
 
 pub type ContractClassResult<T> = Result<T, ContractClassError>;
 
-#[derive(Clone, Debug, Eq, PartialEq, derive_more::From)]
+#[derive(Clone, Debug, Eq, PartialEq, derive_more::From, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum ContractClass {
     V0(ContractClassV0),
     V1(ContractClassV1),
@@ -85,7 +88,8 @@ impl ContractClass {
 }
 
 // V0.
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct ContractClassV0(pub Arc<ContractClassV0Inner>);
 impl Deref for ContractClassV0 {
     type Target = ContractClassV0Inner;
@@ -117,7 +121,7 @@ impl ContractClassV0 {
             + self.n_builtins()
             + self.bytecode_length()
             + 1; // Hinted class hash.
-        // The hashed data size is approximately the number of hashes (invoked in hash chains).
+                 // The hashed data size is approximately the number of hashes (invoked in hash chains).
         let n_steps = constants::N_STEPS_PER_PEDERSEN * hashed_data_size;
 
         ExecutionResources {
@@ -140,7 +144,47 @@ impl ContractClassV0 {
 pub struct ContractClassV0Inner {
     #[serde(deserialize_with = "deserialize_program")]
     pub program: Program,
-    pub entry_points_by_type: HashMap<EntryPointType, Vec<EntryPoint>>,
+    pub entry_points_by_type: IndexMap<EntryPointType, Vec<EntryPoint>>,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for ContractClassV0Inner {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("ContractClassV0Inner", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<Program>().name("program").type_name("Program"))
+                    .field(|f| {
+                        f.ty::<Vec<(EntryPointType, Vec<EntryPoint>)>>()
+                            .name("entry_points_by_type")
+                            .type_name("Vec<(EntryPointType, Vec<EntryPoint>)>")
+                    }),
+            )
+    }
+}
+
+impl Encode for ContractClassV0Inner {
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        self.program.encode_to(dest);
+        parity_scale_codec::Compact(self.entry_points_by_type.len() as u32).encode_to(dest);
+        self.entry_points_by_type.iter().for_each(|kv| kv.encode_to(dest));
+    }
+}
+
+impl Decode for ContractClassV0Inner {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let (program, entry_points_by_type) =
+            <(Program, Vec<(EntryPointType, Vec<EntryPoint>)>)>::decode(input)?;
+        Ok(ContractClassV0Inner {
+            program,
+            entry_points_by_type: entry_points_by_type.into_iter().collect(),
+        })
+    }
 }
 
 impl TryFrom<DeprecatedContractClass> for ContractClassV0 {
@@ -149,13 +193,17 @@ impl TryFrom<DeprecatedContractClass> for ContractClassV0 {
     fn try_from(class: DeprecatedContractClass) -> Result<Self, Self::Error> {
         Ok(Self(Arc::new(ContractClassV0Inner {
             program: sn_api_to_cairo_vm_program(class.program)?,
-            entry_points_by_type: class.entry_points_by_type,
+            entry_points_by_type: class
+                .entry_points_by_type
+                .into_iter()
+                .collect::<IndexMap<EntryPointType, Vec<EntryPoint>>>(),
         })))
     }
 }
 
 // V1.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct ContractClassV1(pub Arc<ContractClassV1Inner>);
 impl Deref for ContractClassV1 {
     type Target = ContractClassV1Inner;
@@ -256,7 +304,7 @@ pub fn estimate_casm_hash_computation_resources(
                 n_steps: 474,
                 n_memory_holes: 0,
                 builtin_instance_counter: HashMap::from([(POSEIDON_BUILTIN_NAME.to_string(), 10)]),
-            } + &poseidon_hash_many_cost(*length)
+            } + &poseidon_hash_many_cost(*length as usize)
         }
         NestedIntList::Node(segments) => {
             // The contract code is segmented by its functions.
@@ -276,7 +324,7 @@ pub fn estimate_casm_hash_computation_resources(
                         "Estimating hash cost is only supported for segmentation depth at most 1."
                     );
                 };
-                execution_resources += &poseidon_hash_many_cost(*length);
+                execution_resources += &poseidon_hash_many_cost(*length as usize);
                 execution_resources += &base_segment_cost;
             }
             execution_resources
@@ -297,7 +345,7 @@ fn get_visited_segments(
 
     match segment_lengths {
         NestedIntList::Leaf(length) => {
-            let segment = *bytecode_offset..*bytecode_offset + length;
+            let segment = *bytecode_offset..*bytecode_offset + usize::try_from(*length).unwrap();
             if visited_pcs.last().is_some_and(|pc| segment.contains(pc)) {
                 res.push(segment.start);
             }
@@ -305,7 +353,7 @@ fn get_visited_segments(
             while visited_pcs.last().is_some_and(|pc| segment.contains(pc)) {
                 visited_pcs.pop();
             }
-            *bytecode_offset += length;
+            *bytecode_offset += usize::try_from(*length).unwrap();
         }
         NestedIntList::Node(segments) => {
             for segment in segments {
@@ -334,12 +382,83 @@ fn get_visited_segments(
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ContractClassV1Inner {
     pub program: Program,
-    pub entry_points_by_type: HashMap<EntryPointType, Vec<EntryPointV1>>,
-    pub hints: HashMap<String, Hint>,
+    pub entry_points_by_type: IndexMap<EntryPointType, Vec<EntryPointV1>>,
+    pub hints: IndexMap<String, Hint>,
     bytecode_segment_lengths: NestedIntList,
 }
 
-#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
+impl Default for ContractClassV1Inner {
+    fn default() -> Self {
+        Self {
+            program: Default::default(),
+            entry_points_by_type: Default::default(),
+            hints: Default::default(),
+            bytecode_segment_lengths: NestedIntList::Leaf(0),
+        }
+    }
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for ContractClassV1Inner {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("ContractClassV1Inner", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<Program>().name("program").type_name("Program"))
+                    .field(|f| {
+                        f.ty::<Vec<(EntryPointType, Vec<EntryPointV1>)>>()
+                            .name("entry_points_by_type")
+                            .type_name("Vec<(EntryPointType, Vec<EntryPointV1>)>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(String, Hint)>>().name("hints").type_name("Vec<(String, Hint)>")
+                    })
+                    .field(|f| {
+                        f.ty::<NestedIntList>()
+                            .name("bytecode_segment_lengths")
+                            .type_name("NestedIntList")
+                    }),
+            )
+    }
+}
+
+impl Encode for ContractClassV1Inner {
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        self.program.encode_to(dest);
+        parity_scale_codec::Compact(self.entry_points_by_type.len() as u32).encode_to(dest);
+        self.entry_points_by_type.iter().for_each(|kv| kv.encode_to(dest));
+        parity_scale_codec::Compact(self.hints.len() as u32).encode_to(dest);
+        self.hints.iter().for_each(|kv| kv.encode_to(dest));
+        self.bytecode_segment_lengths.encode_to(dest);
+    }
+}
+
+impl Decode for ContractClassV1Inner {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let (program, entry_points_by_type, hints, bytecode_segment_lengths) =
+            <(
+                Program,
+                Vec<(EntryPointType, Vec<EntryPointV1>)>,
+                Vec<(String, Hint)>,
+                NestedIntList,
+            )>::decode(input)?;
+
+        Ok(ContractClassV1Inner {
+            program,
+            entry_points_by_type: entry_points_by_type.into_iter().collect(),
+            hints: hints.into_iter().collect(),
+            bytecode_segment_lengths,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct EntryPointV1 {
     pub selector: EntryPointSelector,
     pub offset: EntryPointOffset,
@@ -348,7 +467,7 @@ pub struct EntryPointV1 {
 
 impl EntryPointV1 {
     pub fn pc(&self) -> usize {
-        self.offset.0
+        self.offset.0 as usize
     }
 }
 
@@ -371,7 +490,7 @@ impl TryFrom<CasmContractClass> for ContractClassV1 {
 
         // Collect a sting to hint map so that the hint processor can fetch the correct [Hint]
         // for each instruction.
-        let mut string_to_hint: HashMap<String, Hint> = HashMap::new();
+        let mut string_to_hint = IndexMap::new();
         for (_, hint_list) in class.hints.iter() {
             for hint in hint_list.iter() {
                 string_to_hint.insert(serde_json::to_string(hint)?, hint.clone());
@@ -396,7 +515,7 @@ impl TryFrom<CasmContractClass> for ContractClassV1 {
             instruction_locations,
         )?;
 
-        let mut entry_points_by_type = HashMap::new();
+        let mut entry_points_by_type = IndexMap::new();
         entry_points_by_type.insert(
             EntryPointType::Constructor,
             convert_entry_points_v1(class.entry_points_by_type.constructor)?,
@@ -412,7 +531,7 @@ impl TryFrom<CasmContractClass> for ContractClassV1 {
 
         let bytecode_segment_lengths = class
             .bytecode_segment_lengths
-            .unwrap_or_else(|| NestedIntList::Leaf(program.data_len()));
+            .unwrap_or_else(|| NestedIntList::Leaf(program.data_len() as u64));
 
         Ok(Self(Arc::new(ContractClassV1Inner {
             program,
@@ -456,19 +575,39 @@ fn convert_entry_points_v1(
         .map(|ep| -> Result<_, ProgramError> {
             Ok(EntryPointV1 {
                 selector: EntryPointSelector(felt_to_stark_felt(&Felt252::from(ep.selector))),
-                offset: EntryPointOffset(ep.offset),
+                offset: EntryPointOffset(ep.offset as u64),
                 builtins: ep.builtins.into_iter().map(|builtin| builtin + "_builtin").collect(),
             })
         })
         .collect()
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 // TODO(Ayelet,10/02/2024): Change to bytes.
 pub struct ClassInfo {
     contract_class: ContractClass,
+    #[codec(encoded_as = "crate::scale_codecs::USizeCodec")]
     sierra_program_length: usize,
+    #[codec(encoded_as = "crate::scale_codecs::USizeCodec")]
     abi_length: usize,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for ClassInfo {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("ClassInfo", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<ContractClass>().name("contract_class").type_name("ContractClass")
+                    })
+                    .field(|f| f.ty::<u64>().name("sierra_program_length").type_name("u64"))
+                    .field(|f| f.ty::<u64>().name("abi_length").type_name("u64")),
+            )
+    }
 }
 
 impl ClassInfo {
@@ -506,5 +645,25 @@ impl ClassInfo {
                 sierra_program_length,
             })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests_scale_codec {
+    use parity_scale_codec::{Decode, Encode};
+
+    use crate::execution::contract_class::{ContractClassV0, ContractClassV1};
+    use crate::test_utils::{TEST_CONTRACT_CAIRO0_PATH, TEST_CONTRACT_CAIRO1_PATH};
+
+    #[test]
+    fn test_encode_decode_contract_v0() {
+        let contract = ContractClassV0::from_file(TEST_CONTRACT_CAIRO0_PATH);
+        assert_eq!(contract, ContractClassV0::decode(&mut &contract.encode()[..]).unwrap())
+    }
+
+    #[test]
+    fn test_encode_decode_contract_v1() {
+        let contract = ContractClassV1::from_file(TEST_CONTRACT_CAIRO1_PATH);
+        assert_eq!(contract, ContractClassV1::decode(&mut &contract.encode()[..]).unwrap())
     }
 }

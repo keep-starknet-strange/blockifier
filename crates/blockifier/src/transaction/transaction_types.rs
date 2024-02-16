@@ -1,11 +1,15 @@
 use std::str::FromStr;
 
+use parity_scale_codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::transaction::errors::ParseError;
 
-#[derive(Clone, Copy, Debug, Deserialize, EnumIter, Eq, Hash, PartialEq, Serialize)]
+#[derive(
+    Clone, Copy, Debug, Deserialize, Serialize, EnumIter, Eq, Hash, PartialEq, Encode, Decode,
+)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum TransactionType {
     Declare,
     DeployAccount,

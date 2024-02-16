@@ -5,6 +5,7 @@ use assert_matches::assert_matches;
 use cairo_felt::Felt252;
 use cairo_vm::vm::runners::builtin_runner::{HASH_BUILTIN_NAME, RANGE_CHECK_BUILTIN_NAME};
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
+use indexmap::IndexMap;
 use num_traits::Pow;
 use once_cell::sync::Lazy;
 use pretty_assertions::assert_eq;
@@ -73,7 +74,6 @@ use crate::transaction::test_utils::{
 };
 use crate::transaction::transaction_types::TransactionType;
 use crate::transaction::transactions::{ExecutableTransaction, L1HandlerTransaction};
-use crate::utils::usize_from_u128;
 use crate::versioned_constants::VersionedConstants;
 use crate::{
     check_transaction_execution_error_for_custom_hint,
@@ -119,7 +119,11 @@ fn expected_validate_call_info(
             usize::from(entry_point_selector_name == constants::VALIDATE_ENTRY_POINT_NAME)
         }
         CairoVersion::Cairo1 => {
-            if entry_point_selector_name == constants::VALIDATE_ENTRY_POINT_NAME { 7 } else { 2 }
+            if entry_point_selector_name == constants::VALIDATE_ENTRY_POINT_NAME {
+                7
+            } else {
+                2
+            }
         }
     };
     let n_memory_holes = match cairo_version {
@@ -271,15 +275,17 @@ fn get_actual_resources(
     gas_vector: GasVector,
 ) -> ResourcesMapping {
     let GasVector { l1_gas, l1_data_gas } = gas_vector;
-    let mut actual_resources = ResourcesMapping(HashMap::from([
-        (abi_constants::L1_GAS_USAGE.to_string(), l1_gas.try_into().unwrap()),
-        (abi_constants::BLOB_GAS_USAGE.to_string(), l1_data_gas.try_into().unwrap()),
+    let mut actual_resources = ResourcesMapping(IndexMap::from([
+        (abi_constants::L1_GAS_USAGE.to_string(), l1_gas),
+        (abi_constants::BLOB_GAS_USAGE.to_string(), l1_data_gas),
         (
             abi_constants::N_STEPS_RESOURCE.to_string(),
-            cairo_resources.n_steps + cairo_resources.n_memory_holes,
+            (cairo_resources.n_steps + cairo_resources.n_memory_holes) as u128,
         ),
     ]));
-    actual_resources.0.extend(cairo_resources.builtin_instance_counter);
+    actual_resources
+        .0
+        .extend(cairo_resources.builtin_instance_counter.into_iter().map(|(k, v)| (k, v as u128)));
     actual_resources
 }
 
@@ -342,7 +348,11 @@ fn add_kzg_da_resources_to_resources_mapping(
         .insert(abi_constants::N_STEPS_RESOURCE.to_string(), os_kzg_da_resources.n_steps);
 
     resources_to_add.into_iter().for_each(|(key, value)| {
-        target.0.entry(key.to_string()).and_modify(|v| *v += value).or_insert(value);
+        target
+            .0
+            .entry(key.to_string())
+            .and_modify(|v| *v += value as u128)
+            .or_insert(value as u128);
     });
 }
 
@@ -1760,23 +1770,20 @@ fn test_l1_handler(#[values(false, true)] use_kzg_da: bool) {
         ..StateChangesCount::default()
     };
 
-    let mut expected_resource_mapping = ResourcesMapping(HashMap::from([
-        (HASH_BUILTIN_NAME.to_string(), 11 + payload_size),
+    let mut expected_resource_mapping = ResourcesMapping(IndexMap::from([
+        (HASH_BUILTIN_NAME.to_string(), (11 + payload_size) as u128),
         (
             abi_constants::N_STEPS_RESOURCE.to_string(),
-            get_tx_resources(TransactionType::L1Handler).n_steps + 246,
+            get_tx_resources(TransactionType::L1Handler).n_steps as u128 + 246,
         ),
         (
             RANGE_CHECK_BUILTIN_NAME.to_string(),
             get_tx_resources(TransactionType::L1Handler).builtin_instance_counter
-                [&RANGE_CHECK_BUILTIN_NAME.to_string()]
+                [&RANGE_CHECK_BUILTIN_NAME.to_string()] as u128
                 + 6,
         ),
-        (abi_constants::L1_GAS_USAGE.to_string(), usize_from_u128(expected_gas.l1_gas).unwrap()),
-        (
-            abi_constants::BLOB_GAS_USAGE.to_string(),
-            usize_from_u128(expected_gas.l1_data_gas).unwrap(),
-        ),
+        (abi_constants::L1_GAS_USAGE.to_string(), expected_gas.l1_gas),
+        (abi_constants::BLOB_GAS_USAGE.to_string(), expected_gas.l1_data_gas),
     ]));
 
     add_kzg_da_resources_to_resources_mapping(
@@ -1853,12 +1860,10 @@ fn test_execute_tx_with_invalid_transaction_version() {
     });
 
     let execution_info = account_tx.execute(state, block_context, true, true).unwrap();
-    assert!(
-        execution_info
-            .revert_error
-            .unwrap()
-            .contains(format!("ASSERT_EQ instruction failed: {} != 1.", invalid_version).as_str())
-    );
+    assert!(execution_info
+        .revert_error
+        .unwrap()
+        .contains(format!("ASSERT_EQ instruction failed: {} != 1.", invalid_version).as_str()));
 }
 
 fn max_n_emitted_events() -> usize {
@@ -1920,17 +1925,17 @@ fn test_emit_event_exceeds_limit(
     );
 
     let calldata = [
-        vec![stark_felt!(
-            u16::try_from(n_emitted_events).expect("Failed to convert usize to u16.")
-        )]
+        vec![
+            stark_felt!(u16::try_from(n_emitted_events).expect("Failed to convert usize to u16.")),
+        ]
         .to_owned(),
-        vec![stark_felt!(
-            u16::try_from(event_keys.len()).expect("Failed to convert usize to u16.")
-        )],
+        vec![
+            stark_felt!(u16::try_from(event_keys.len()).expect("Failed to convert usize to u16.")),
+        ],
         event_keys.clone(),
-        vec![stark_felt!(
-            u16::try_from(event_data.len()).expect("Failed to convert usize to u16.")
-        )],
+        vec![
+            stark_felt!(u16::try_from(event_data.len()).expect("Failed to convert usize to u16.")),
+        ],
         event_data.clone(),
     ]
     .concat();

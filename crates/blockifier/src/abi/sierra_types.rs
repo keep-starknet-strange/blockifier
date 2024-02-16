@@ -5,6 +5,7 @@ use cairo_vm::vm::errors::memory_errors::MemoryError;
 use cairo_vm::vm::vm_core::VirtualMachine;
 use num_bigint::{BigUint, ToBigUint};
 use num_traits::ToPrimitive;
+use parity_scale_codec::{Decode, Encode};
 use starknet_api::core::{ContractAddress, PatriciaKey};
 use starknet_api::hash::StarkFelt;
 use starknet_api::state::StorageKey;
@@ -60,6 +61,8 @@ pub fn next_storage_key(key: &StorageKey) -> Result<StorageKey, StarknetApiError
 // We implement the trait SierraType for SierraU128 and not for u128 since it's not guaranteed that
 // we will always have only one sierra u128 type. For example, we might have two different fields
 // where in one of them each cell is at most 127 bits.
+#[derive(Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct SierraU128 {
     pub val: u128,
 }
@@ -87,6 +90,8 @@ impl SierraType for SierraU128 {
     }
 }
 
+#[derive(Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct SierraU256 {
     pub low_val: u128,
     pub high_val: u128,

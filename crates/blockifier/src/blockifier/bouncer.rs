@@ -44,7 +44,13 @@ impl BouncerInfo {
             .map(|name| {
                 (
                     name.name().to_string(),
-                    tx_actual_resources.0.get(name.name()).copied().unwrap_or_default(),
+                    tx_actual_resources
+                        .0
+                        .get(name.name())
+                        .copied()
+                        .unwrap_or_default()
+                        .try_into()
+                        .unwrap(),
                 )
             })
             .collect();
@@ -53,12 +59,16 @@ impl BouncerInfo {
                 .0
                 .get(constants::N_STEPS_RESOURCE)
                 .copied()
-                .unwrap_or_default(),
+                .unwrap_or_default()
+                .try_into()
+                .unwrap(),
             n_memory_holes: tx_actual_resources
                 .0
                 .get("n_memory_holes")
                 .copied()
-                .unwrap_or_default(),
+                .unwrap_or_default()
+                .try_into()
+                .unwrap(),
             builtin_instance_counter,
         };
 

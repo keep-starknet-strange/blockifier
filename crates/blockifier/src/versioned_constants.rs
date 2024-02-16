@@ -8,6 +8,7 @@ use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
 use indexmap::{IndexMap, IndexSet};
 use num_rational::Ratio;
 use once_cell::sync::Lazy;
+use parity_scale_codec::{Decode, Encode};
 use serde::de::Error as DeserializationError;
 use serde::{Deserialize, Deserializer};
 use serde_json::{Map, Number, Value};
@@ -59,6 +60,104 @@ pub struct VersionedConstants {
     // TODO: Consider making this a struct, this will require change the way we access these
     // values.
     vm_resource_fee_cost: Arc<HashMap<String, ResourceCost>>,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for VersionedConstants {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("VersionedConstants", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<EventLimits>().name("tx_event_limits").type_name("EventLimits")
+                    })
+                    .field(|f| f.ty::<u32>().name("invoke_tx_max_n_steps").type_name("u32"))
+                    .field(|f| {
+                        f.ty::<L2ResourceGasCosts>()
+                            .name("l2_resource_gas_costs")
+                            .type_name("L2ResourceGasCosts")
+                    })
+                    .field(|f| f.ty::<u64>().name("max_recurtion_depth").type_name("u64"))
+                    .field(|f| f.ty::<u32>().name("validate_max_n_steps").type_name("u32"))
+                    .field(|f| {
+                        f.ty::<Arc<OSConstants>>()
+                            .name("os_constants")
+                            .type_name("Arc<OSConstants>")
+                    })
+                    .field(|f| {
+                        f.ty::<Arc<OsResources>>()
+                            .name("os_resources")
+                            .type_name("Arc<OsResources>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(String, u128, u128)>>()
+                            .name("event_size_limit")
+                            .type_name("Vec<(String, u128, u128)>")
+                    }),
+            )
+    }
+}
+
+impl Encode for VersionedConstants {
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        self.tx_event_limits.encode_to(dest);
+        self.invoke_tx_max_n_steps.encode_to(dest);
+        self.l2_resource_gas_costs.encode_to(dest);
+        (self.max_recursion_depth as u64).encode_to(dest);
+        self.validate_max_n_steps.encode_to(dest);
+        self.os_constants.encode_to(dest);
+        self.os_resources.encode_to(dest);
+        parity_scale_codec::Compact(self.vm_resource_fee_cost.len() as u32).encode_to(dest);
+        self.vm_resource_fee_cost
+            .iter()
+            .map(|(k, v)| (k, v.numer(), v.denom()))
+            .for_each(|kv| kv.encode_to(dest));
+    }
+}
+
+impl Decode for VersionedConstants {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let (
+            tx_event_limits,
+            invoke_tx_max_n_steps,
+            l2_resource_gas_costs,
+            max_recursion_depth,
+            validate_max_n_steps,
+            os_constants,
+            os_resources,
+            vm_resource_fee_cost,
+        ) = <(
+            EventLimits,
+            u32,
+            L2ResourceGasCosts,
+            u64,
+            u32,
+            OSConstants,
+            OsResources,
+            Vec<(String, u128, u128)>,
+        )>::decode(input)?;
+
+        Ok(Self {
+            tx_event_limits,
+            invoke_tx_max_n_steps,
+            l2_resource_gas_costs,
+            max_recursion_depth: max_recursion_depth as usize,
+            validate_max_n_steps,
+            os_constants: Arc::new(os_constants),
+            os_resources: Arc::new(os_resources),
+            vm_resource_fee_cost: Arc::new(
+                vm_resource_fee_cost
+                    .into_iter()
+                    .map(|(k, n, d)| (k, ResourceCost::new_raw(n, d)))
+                    .collect(),
+            ),
+        })
+    }
 }
 
 impl VersionedConstants {
@@ -195,6 +294,57 @@ pub struct L2ResourceGasCosts {
     pub gas_per_code_byte: ResourceCost,
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for L2ResourceGasCosts {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("L2ResourceGasCosts", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<(u128, u128)>().name("gas_per_data_felt").type_name("(u128, u128)")
+                    })
+                    .field(|f| {
+                        f.ty::<(u128, u128)>().name("event_key_factor").type_name("(u128, u128)")
+                    })
+                    .field(|f| {
+                        f.ty::<(u128, u128)>().name("gas_per_code_byte").type_name("(u128, u128)")
+                    }),
+            )
+    }
+}
+
+impl Encode for L2ResourceGasCosts {
+    fn size_hint(&self) -> usize {
+        6 * core::mem::size_of::<u128>()
+    }
+
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        self.gas_per_data_felt.numer().encode_to(dest);
+        self.gas_per_data_felt.denom().encode_to(dest);
+        self.event_key_factor.numer().encode_to(dest);
+        self.event_key_factor.denom().encode_to(dest);
+        self.gas_per_code_byte.numer().encode_to(dest);
+        self.gas_per_code_byte.denom().encode_to(dest);
+    }
+}
+
+impl Decode for L2ResourceGasCosts {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let decodec = <[u128; 6]>::decode(input)?;
+
+        Ok(L2ResourceGasCosts {
+            gas_per_data_felt: ResourceCost::new_raw(decodec[0], decodec[1]),
+            event_key_factor: ResourceCost::new_raw(decodec[2], decodec[3]),
+            gas_per_code_byte: ResourceCost::new_raw(decodec[4], decodec[5]),
+        })
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq)]
 pub struct EventLimits {
     pub max_data_length: usize,
@@ -212,6 +362,48 @@ impl EventLimits {
     }
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for EventLimits {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("EventSizeLimit", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<u64>().name("max_data_length").type_name("u64"))
+                    .field(|f| f.ty::<u64>().name("max_keys_length").type_name("u64"))
+                    .field(|f| f.ty::<u64>().name("max_n_emitted_events").type_name("u64")),
+            )
+    }
+}
+
+impl Encode for EventLimits {
+    fn size_hint(&self) -> usize {
+        3 * core::mem::size_of::<u64>()
+    }
+
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        (self.max_data_length as u64, self.max_keys_length as u64, self.max_n_emitted_events as u64)
+            .encode_to(dest)
+    }
+}
+
+impl Decode for EventLimits {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let (max_data_length, max_keys_length, max_n_emitted_events) =
+            <(u64, u64, u64)>::decode(input)?;
+
+        Ok(Self {
+            max_data_length: max_data_length as usize,
+            max_keys_length: max_keys_length as usize,
+            max_n_emitted_events: max_n_emitted_events as usize,
+        })
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize)]
 // Serde trick for adding validations via a customr deserializer, without forgoing the derive.
 // See: https://github.com/serde-rs/serde/issues/1220.
@@ -221,16 +413,72 @@ pub struct OsResources {
     // steps).
     // TODO(Arni, 14/6/2023): Update `GetBlockHash` values.
     // TODO(ilya): Consider moving the resources of a keccak round to a seperate dict.
-    execute_syscalls: HashMap<SyscallSelector, ExecutionResources>,
+    execute_syscalls: IndexMap<SyscallSelector, ExecutionResources>,
     // Mapping from every transaction to its extra execution resources in the OS,
     // i.e., resources that don't count during the execution itself.
     // For each transaction the OS uses a constant amount of VM resources, and an
     // additional variable amount that depends on the calldata length.
-    execute_txs_inner: HashMap<TransactionType, ResourcesByVersion>,
+    execute_txs_inner: IndexMap<TransactionType, ResourcesByVersion>,
 
     // Resources needed for the OS to compute the KZG commitment info, as a factor of the data
     // segment length. Does not include poseidon_hash_many cost.
     compute_os_kzg_commitment_info: ExecutionResources,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for OsResources {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("OsResources", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<Vec<(SyscallSelector, ExecutionResources)>>()
+                            .name("execute_syscalls")
+                            .type_name("Vec<SyscallSelector, ExecutionResources>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(TransactionType, ResourcesByVersion)>>()
+                            .name("execute_txs_inner")
+                            .type_name("Vec<(TransactionType, ResourcesByVersion)>")
+                    })
+                    .field(|f| {
+                        f.ty::<ExecutionResources>()
+                            .name("compute_os_kzg_commitment_info")
+                            .type_name("ExecutionResources")
+                    }),
+            )
+    }
+}
+
+impl Encode for OsResources {
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        parity_scale_codec::Compact(self.execute_syscalls.len() as u32).encode_to(dest);
+        self.execute_syscalls.iter().for_each(|kv| kv.encode_to(dest));
+        parity_scale_codec::Compact(self.execute_txs_inner.len() as u32).encode_to(dest);
+        self.execute_txs_inner.iter().for_each(|kv| kv.encode_to(dest));
+        self.compute_os_kzg_commitment_info.encode_to(dest);
+    }
+}
+
+impl Decode for OsResources {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let decoded = <(
+            Vec<(SyscallSelector, ExecutionResources)>,
+            Vec<(TransactionType, ResourcesByVersion)>,
+            ExecutionResources,
+        )>::decode(input)?;
+
+        Ok(OsResources {
+            execute_syscalls: decoded.0.into_iter().collect(),
+            execute_txs_inner: decoded.1.into_iter().collect(),
+            compute_os_kzg_commitment_info: decoded.2,
+        })
+    }
 }
 
 impl OsResources {
@@ -386,6 +634,47 @@ pub struct OSConstants {
 
     // Invariant: fixed keys.
     gas_costs: IndexMap<String, u64>,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for OSConstants {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("OSConstants", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<ValidateRoundingConsts>()
+                            .name("validate_rounding_consts")
+                            .type_name("ValidateRoundingConsts")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(String, u64)>>()
+                            .name("gas_costs")
+                            .type_name("Vec<(String, u64)>")
+                    }),
+            )
+    }
+}
+
+impl Encode for OSConstants {
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        self.validate_rounding_consts.encode_to(dest);
+        parity_scale_codec::Compact(self.gas_costs.len() as u32).encode_to(dest);
+        self.gas_costs.iter().for_each(|kv| kv.encode_to(dest));
+    }
+}
+
+impl Decode for OSConstants {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let decoded = <(ValidateRoundingConsts, Vec<(String, u64)>)>::decode(input)?;
+
+        Ok(Self { validate_rounding_consts: decoded.0, gas_costs: decoded.1.into_iter().collect() })
+    }
 }
 
 impl OSConstants {
@@ -581,8 +870,9 @@ pub enum OsConstantsSerdeError {
     ValidationError(String),
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Encode, Decode)]
 #[serde(try_from = "ResourceParamsRaw")]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct ResourcesParams {
     pub constant: ExecutionResources,
     pub calldata_factor: ExecutionResources,
@@ -623,7 +913,8 @@ impl TryFrom<ResourceParamsRaw> for ResourcesParams {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 struct ValidateRoundingConsts {
     // Flooring factor for block number in validate mode.
     pub validate_block_number_rounding: u64,
@@ -637,7 +928,8 @@ impl Default for ValidateRoundingConsts {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct ResourcesByVersion {
     pub resources: ResourcesParams,
     pub deprecated_resources: ResourcesParams,

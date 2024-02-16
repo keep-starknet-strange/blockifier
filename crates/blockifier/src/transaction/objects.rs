@@ -1,7 +1,8 @@
-use std::collections::HashMap;
-
 use cairo_felt::Felt252;
+
+use indexmap::IndexMap;
 use num_traits::Pow;
+use parity_scale_codec::{Decode, Encode};
 use serde::Serialize;
 use starknet_api::core::{ContractAddress, Nonce};
 use starknet_api::data_availability::DataAvailabilityMode;
@@ -46,7 +47,8 @@ macro_rules! implement_getters {
 }
 
 /// Contains the account information of the transaction (outermost call).
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum TransactionInfo {
     Current(CurrentTransactionInfo),
     Deprecated(DeprecatedTransactionInfo),
@@ -105,7 +107,8 @@ impl HasRelatedFeeType for TransactionInfo {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct CurrentTransactionInfo {
     pub common_fields: CommonAccountFields,
     pub resource_bounds: ResourceBoundsMapping,
@@ -126,7 +129,8 @@ impl CurrentTransactionInfo {
     }
 }
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct DeprecatedTransactionInfo {
     pub common_fields: CommonAccountFields,
     pub max_fee: Fee,
@@ -179,7 +183,8 @@ impl GasVector {
     }
 }
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct CommonAccountFields {
     pub transaction_hash: TransactionHash,
     pub version: TransactionVersion,
@@ -190,7 +195,15 @@ pub struct CommonAccountFields {
 }
 
 /// Contains the information gathered by the execution of a transaction.
-#[derive(Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    Serialize,
+    /* TODO @bidzyyys
+     * Encode, Decode */
+)]
 pub struct TransactionExecutionInfo {
     /// Transaction validation call info; [None] for `L1Handler`.
     pub validate_call_info: Option<CallInfo>,
@@ -234,22 +247,76 @@ impl TransactionExecutionInfo {
 
 /// A mapping from a transaction execution resource to its actual usage.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize)]
-pub struct ResourcesMapping(pub HashMap<String, usize>);
-
+pub struct ResourcesMapping(pub IndexMap<String, u128>);
 impl ResourcesMapping {
     #[cfg(test)]
-    pub fn n_steps(&self) -> usize {
+    pub fn n_steps(&self) -> u128 {
         *self.0.get(crate::abi::constants::N_STEPS_RESOURCE).unwrap()
     }
 
     #[cfg(test)]
-    pub fn gas_usage(&self) -> usize {
+    pub fn gas_usage(&self) -> u128 {
         *self.0.get(crate::abi::constants::L1_GAS_USAGE).unwrap()
     }
 
     #[cfg(test)]
-    pub fn blob_gas_usage(&self) -> usize {
+    pub fn blob_gas_usage(&self) -> u128 {
         *self.0.get(crate::abi::constants::BLOB_GAS_USAGE).unwrap()
+    }
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for ResourcesMapping {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("ResourcesMapping", module_path!()))
+            .composite(
+                scale_info::build::Fields::unnamed().field(|f| f.ty::<Vec<(String, u128)>>()),
+            )
+    }
+}
+
+impl Encode for ResourcesMapping {
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        parity_scale_codec::Compact(self.0.len() as u32).encode_to(dest);
+        self.0.iter().for_each(|kv| kv.encode_to(dest));
+    }
+}
+
+impl Decode for ResourcesMapping {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let val = <Vec<(String, u128)>>::decode(input)?;
+
+        Ok(ResourcesMapping(val.into_iter().collect()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use parity_scale_codec::{Decode, Encode};
+
+    use super::*;
+    use crate::abi::constants::{L1_GAS_USAGE, N_STEPS_RESOURCE};
+
+    #[test]
+    fn resources_mapping_encoding_decoding() {
+        let map = IndexMap::from_iter([
+            (L1_GAS_USAGE.to_string(), 21000),
+            (N_STEPS_RESOURCE.to_string(), 300000),
+        ]);
+        let resources_mapping = ResourcesMapping(map);
+
+        let encoded = resources_mapping.encode();
+        #[cfg(feature = "std")]
+        println!("Encoded: {:?}", encoded);
+
+        let decoded = ResourcesMapping::decode(&mut &encoded[..]).expect("Decoding failed");
+
+        assert_eq!(resources_mapping, decoded);
     }
 }
 

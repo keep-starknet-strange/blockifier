@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
+use parity_scale_codec::{Decode, Encode};
 use starknet_api::calldata;
 use starknet_api::core::{ContractAddress, EntryPointSelector};
 use starknet_api::deprecated_contract_class::EntryPointType;
@@ -47,7 +48,8 @@ mod flavors_test;
 mod post_execution_test;
 
 /// Represents a paid Starknet transaction.
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum AccountTransaction {
     Declare(DeclareTransaction),
     DeployAccount(DeployAccountTransaction),

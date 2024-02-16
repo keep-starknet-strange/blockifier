@@ -90,7 +90,11 @@ impl<T: SyscallResponse> SyscallResponse for SyscallResponseWrapper<T> {
                 let revert_reason_start = vm.add_memory_segment();
                 let revert_reason_end = vm.load_data(
                     revert_reason_start,
-                    &error_data.into_iter().map(stark_felt_to_felt).map(Into::into).collect(),
+                    &error_data
+                        .into_iter()
+                        .map(stark_felt_to_felt)
+                        .map(Into::into)
+                        .collect::<Vec<_>>(),
                 )?;
 
                 // Write the start and end pointers of the error data.

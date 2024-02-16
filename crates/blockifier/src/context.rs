@@ -1,17 +1,20 @@
+use parity_scale_codec::{Decode, Encode};
 use starknet_api::core::{ChainId, ContractAddress};
 
 use crate::blockifier::block::BlockInfo;
 use crate::transaction::objects::{FeeType, TransactionInfo, TransactionInfoCreator};
 use crate::versioned_constants::VersionedConstants;
 
-/// Create via [`crate::blockifier::block::pre_process_block`] to ensure correctness.
-#[derive(Clone, Debug)]
+/// Create via [`crate::block::pre_process_block`] to ensure correctness.
+#[derive(Clone, Debug, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct TransactionContext {
     pub block_context: BlockContext,
     pub tx_info: TransactionInfo,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct BlockContext {
     pub(crate) block_info: BlockInfo,
     pub(crate) chain_info: ChainInfo,
@@ -59,7 +62,8 @@ impl BlockContext {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct ChainInfo {
     pub chain_id: ChainId,
     pub fee_token_addresses: FeeTokenAddresses,
@@ -83,7 +87,8 @@ impl Default for ChainInfo {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct FeeTokenAddresses {
     pub strk_fee_token_address: ContractAddress,
     pub eth_fee_token_address: ContractAddress,

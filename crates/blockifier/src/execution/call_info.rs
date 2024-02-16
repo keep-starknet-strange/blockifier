@@ -3,6 +3,7 @@ use std::iter::Sum;
 use std::ops::Add;
 
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
+use parity_scale_codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use starknet_api::core::{ClassHash, ContractAddress, EthAddress, PatriciaKey};
 use starknet_api::hash::{StarkFelt, StarkHash};
@@ -14,7 +15,8 @@ use crate::execution::entry_point::CallEntryPoint;
 use crate::fee::gas_usage::get_message_segment_length;
 use crate::state::cached_state::StorageEntry;
 
-#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct Retdata(pub Vec<StarkFelt>);
 
 #[macro_export]
@@ -25,10 +27,26 @@ macro_rules! retdata {
 }
 
 #[cfg_attr(test, derive(Clone))]
-#[derive(Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Encode, Decode)]
 pub struct OrderedEvent {
+    #[codec(encoded_as = "crate::scale_codecs::USizeCodec")]
     pub order: usize,
     pub event: EventContent,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for OrderedEvent {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("OrderedEvent", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<u64>().name("order").type_name("u64"))
+                    .field(|f| f.ty::<EventContent>().name("event").type_name("event_content")),
+            )
+    }
 }
 
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
@@ -55,15 +73,17 @@ impl MessageL1CostInfo {
 }
 
 #[cfg_attr(test, derive(Clone))]
-#[derive(Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct MessageToL1 {
     pub to_address: EthAddress,
     pub payload: L2ToL1Payload,
 }
 
 #[cfg_attr(test, derive(Clone))]
-#[derive(Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Encode, Decode)]
 pub struct OrderedL2ToL1Message {
+    #[codec(encoded_as = "crate::scale_codecs::USizeCodec")]
     pub order: usize,
     pub message: MessageToL1,
 }
@@ -72,9 +92,25 @@ pub fn get_payload_lengths(l2_to_l1_messages: &[OrderedL2ToL1Message]) -> Vec<us
     l2_to_l1_messages.iter().map(|message| message.message.payload.0.len()).collect()
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for OrderedL2ToL1Message {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("OrderedL2ToL1Message", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<u64>().name("order").type_name("u64"))
+                    .field(|f| f.ty::<MessageToL1>().name("message").type_name("MessageToL1")),
+            )
+    }
+}
+
 /// Represents the effects of executing a single entry point.
 #[cfg_attr(test, derive(Clone))]
-#[derive(Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct CallExecution {
     pub retdata: Retdata,
     pub events: Vec<OrderedEvent>,
@@ -171,7 +207,7 @@ impl TestExecutionSummary {
 }
 
 /// Represents the full effects of executing an entry point, including the inner calls it invoked.
-#[derive(Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Encode, Decode)]
 pub struct CallInfo {
     pub call: CallEntryPoint,
     pub execution: CallExecution,
@@ -181,7 +217,42 @@ pub struct CallInfo {
 
     // Additional information gathered during execution.
     pub storage_read_values: Vec<StarkFelt>,
+
+    #[codec(encoded_as = "crate::scale_codecs::HashSetCodec::<StorageKey>")]
     pub accessed_storage_keys: HashSet<StorageKey>,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for CallInfo {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("CallInfo", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<CallEntryPoint>().name("call").type_name("CallEntryPoint"))
+                    .field(|f| f.ty::<CallExecution>().name("execution").type_name("CallExecution"))
+                    .field(|f| {
+                        f.ty::<ExecutionResources>()
+                            .name("resources")
+                            .type_name("ExecutionResources")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<CallInfo>>().name("inner_calls").type_name("Vec<CallInfo>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<StarkFelt>>()
+                            .name("storage_read_values")
+                            .type_name("Vec<StarkFelt>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<StorageKey>>()
+                            .name("accessed_storage_keys")
+                            .type_name("Vec<StorageKey>")
+                    }),
+            )
+    }
 }
 
 impl CallInfo {

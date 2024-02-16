@@ -15,6 +15,7 @@ use cairo_vm::vm::errors::memory_errors::MemoryError;
 use cairo_vm::vm::errors::vm_errors::VirtualMachineError;
 use cairo_vm::vm::runners::cairo_runner::{ExecutionResources, ResourceTracker, RunResources};
 use cairo_vm::vm::vm_core::VirtualMachine;
+use indexmap::IndexMap;
 use num_traits::Zero;
 use starknet_api::core::{ClassHash, ContractAddress, EntryPointSelector};
 use starknet_api::deprecated_contract_class::EntryPointType;
@@ -201,7 +202,7 @@ pub struct SyscallHintProcessor<'a> {
     pub secp256r1_hint_processor: SecpHintProcessor<ark_secp256r1::Config>,
 
     // Additional fields.
-    hints: &'a HashMap<String, Hint>,
+    hints: &'a IndexMap<String, Hint>,
     // Transaction info. and signature segments; allocated on-demand.
     execution_info_ptr: Option<Relocatable>,
 }
@@ -213,7 +214,7 @@ impl<'a> SyscallHintProcessor<'a> {
         context: &'a mut EntryPointExecutionContext,
         initial_syscall_ptr: Relocatable,
         call: CallEntryPoint,
-        hints: &'a HashMap<String, Hint>,
+        hints: &'a IndexMap<String, Hint>,
         read_only_segments: ReadOnlySegments,
     ) -> Self {
         SyscallHintProcessor {
@@ -471,7 +472,7 @@ impl<'a> SyscallHintProcessor<'a> {
         Ok(())
     }
 
-    fn read_next_syscall_selector(&mut self, vm: &mut VirtualMachine) -> SyscallResult<StarkFelt> {
+    fn read_next_syscall_selector(&mut self, vm: &VirtualMachine) -> SyscallResult<StarkFelt> {
         let selector = stark_felt_from_ptr(vm, &mut self.syscall_ptr)?;
 
         Ok(selector)
@@ -640,7 +641,7 @@ impl<'a> SyscallHintProcessor<'a> {
 
 /// Retrieves a [Relocatable] from the VM given a [ResOperand].
 /// A [ResOperand] represents a CASM result expression, and is deserialized with the hint.
-fn get_ptr_from_res_operand_unchecked(vm: &mut VirtualMachine, res: &ResOperand) -> Relocatable {
+fn get_ptr_from_res_operand_unchecked(vm: &VirtualMachine, res: &ResOperand) -> Relocatable {
     let (cell, base_offset) = match res {
         ResOperand::Deref(cell) => (cell, Felt252::from(0)),
         ResOperand::BinOp(BinOpOperand {

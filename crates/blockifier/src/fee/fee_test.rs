@@ -6,6 +6,7 @@ use cairo_vm::vm::runners::builtin_runner::{
     SIGNATURE_BUILTIN_NAME,
 };
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
+use indexmap::IndexMap;
 use rstest::rstest;
 use starknet_api::transaction::{Fee, TransactionVersion};
 
@@ -92,9 +93,9 @@ fn test_discounted_gas_overdraft(
     });
     let actual_cost = ActualCost {
         actual_fee: Fee(7),
-        actual_resources: ResourcesMapping(HashMap::from([
-            (constants::L1_GAS_USAGE.to_string(), l1_gas_used),
-            (constants::BLOB_GAS_USAGE.to_string(), l1_data_gas_used),
+        actual_resources: ResourcesMapping(IndexMap::from([
+            (constants::L1_GAS_USAGE.to_string(), l1_gas_used as u128),
+            (constants::BLOB_GAS_USAGE.to_string(), l1_data_gas_used as u128),
         ])),
         ..Default::default()
     };

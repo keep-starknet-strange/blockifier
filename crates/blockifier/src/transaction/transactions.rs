@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
+use parity_scale_codec::{Decode, Encode};
 use starknet_api::calldata;
 use starknet_api::core::{ClassHash, ContractAddress, Nonce};
 use starknet_api::deprecated_contract_class::EntryPointType;
@@ -105,7 +106,8 @@ pub trait ValidatableTransaction {
     ) -> TransactionExecutionResult<Option<CallInfo>>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct DeclareTransaction {
     pub tx: starknet_api::transaction::DeclareTransaction,
     pub tx_hash: TransactionHash,
@@ -245,7 +247,8 @@ impl TransactionInfoCreator for DeclareTransaction {
         }
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct DeployAccountTransaction {
     pub tx: starknet_api::transaction::DeployAccountTransaction,
     pub tx_hash: TransactionHash,
@@ -351,7 +354,8 @@ impl TransactionInfoCreator for DeployAccountTransaction {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct InvokeTransaction {
     pub tx: starknet_api::transaction::InvokeTransaction,
     pub tx_hash: TransactionHash,
@@ -461,7 +465,8 @@ impl TransactionInfoCreator for InvokeTransaction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct L1HandlerTransaction {
     pub tx: starknet_api::transaction::L1HandlerTransaction,
     pub tx_hash: TransactionHash,

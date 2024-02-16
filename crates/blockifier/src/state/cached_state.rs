@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use cached::{Cached, SizedCache};
 use derive_more::IntoIterator;
 use indexmap::IndexMap;
+use parity_scale_codec::{Decode, Encode};
 use starknet_api::core::{ClassHash, CompiledClassHash, ContractAddress, Nonce};
 use starknet_api::hash::StarkFelt;
 use starknet_api::state::StorageKey;
@@ -14,7 +15,6 @@ use crate::execution::contract_class::ContractClass;
 use crate::state::errors::StateError;
 use crate::state::state_api::{State, StateReader, StateResult};
 use crate::utils::subtract_mappings;
-
 #[cfg(test)]
 #[path = "cached_state_test.rs"]
 mod test;
@@ -293,8 +293,7 @@ impl<S: StateReader> State for CachedState<S> {
         let current_nonce = self.get_nonce_at(contract_address)?;
         // TODO(Ori, 1/2/2024): Write an indicative expect message explaining why the conversion
         // works.
-        let current_nonce_as_u64: u64 =
-            usize::try_from(current_nonce.0)?.try_into().expect("Failed to convert usize to u64.");
+        let current_nonce_as_u64: u64 = u64::try_from(current_nonce.0)?;
         let next_nonce_val = 1_u64 + current_nonce_as_u64;
         let next_nonce = Nonce(StarkFelt::from(next_nonce_val));
         self.cache.get_mut().set_nonce_value(contract_address, next_nonce);
@@ -650,6 +649,141 @@ pub struct CommitmentStateDiff {
 
     // Global attributes.
     pub class_hash_to_compiled_class_hash: IndexMap<ClassHash, CompiledClassHash>,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for CommitmentStateDiff {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("CommitmentStateDiff", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<Vec<(ContractAddress, ClassHash)>>()
+                            .name("address_to_class_hash")
+                            .type_name("Vec<(ContractAddress, ClassHash)>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(ContractAddress, Nonce)>>()
+                            .name("address_to_nonce")
+                            .type_name("Vec<(ContractAddress, Nonce)>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(ContractAddress, Vec<(StorageKey, StarkFelt)>)>>()
+                            .name("storage_updates")
+                            .type_name("Vec<(ContractAddress, Vec<(StorageKey, StarkFelt)>)>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(ClassHash, CompiledClassHash)>>()
+                            .name("class_hash_to_compiled_class_hash")
+                            .type_name("Vec<(NestedIntList)>")
+                    }),
+            )
+    }
+}
+
+impl Encode for CommitmentStateDiff {
+    fn size_hint(&self) -> usize {
+        (4 + self.storage_updates.len()) // Lengths of vectors.
+            + self.address_to_class_hash.len()
+                * (core::mem::size_of::<ContractAddress>() + core::mem::size_of::<ClassHash>())
+            + self.address_to_nonce.len()
+                * (core::mem::size_of::<ContractAddress>() + core::mem::size_of::<Nonce>())
+            + self.class_hash_to_compiled_class_hash.len()
+                * (core::mem::size_of::<ClassHash>() + core::mem::size_of::<CompiledClassHash>())
+            + self.storage_updates.len() * core::mem::size_of::<ContractAddress>()
+    }
+
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        parity_scale_codec::Compact(self.address_to_class_hash.len() as u64).encode_to(dest);
+        self.address_to_class_hash.iter().for_each(|v| v.encode_to(dest));
+        parity_scale_codec::Compact(self.address_to_nonce.len() as u64).encode_to(dest);
+        self.address_to_nonce.iter().for_each(|v| v.encode_to(dest));
+        parity_scale_codec::Compact(self.storage_updates.len() as u64).encode_to(dest);
+        self.storage_updates.iter().for_each(|(address, idx_map)| {
+            address.encode_to(dest);
+            parity_scale_codec::Compact(idx_map.len() as u64).encode_to(dest);
+            idx_map.iter().for_each(|v| v.encode_to(dest));
+        });
+        parity_scale_codec::Compact(self.class_hash_to_compiled_class_hash.len() as u64)
+            .encode_to(dest);
+        self.class_hash_to_compiled_class_hash.iter().for_each(|v| v.encode_to(dest));
+    }
+}
+
+impl Decode for CommitmentStateDiff {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let res = <(
+            Vec<(ContractAddress, ClassHash)>,
+            Vec<(ContractAddress, Nonce)>,
+            Vec<(ContractAddress, Vec<(StorageKey, StarkFelt)>)>,
+            Vec<(ClassHash, CompiledClassHash)>,
+        )>::decode(input)?;
+
+        Ok(CommitmentStateDiff {
+            address_to_class_hash: res.0.into_iter().collect(),
+            address_to_nonce: res.1.into_iter().collect(),
+            storage_updates: res
+                .2
+                .into_iter()
+                .map(|(address, v)| (address, v.into_iter().collect()))
+                .collect(),
+            class_hash_to_compiled_class_hash: res.3.into_iter().collect(),
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use parity_scale_codec::{Decode, Encode};
+
+    use super::*;
+
+    #[test]
+    fn test_commitment_state_diff_encoding_decoding() {
+        let mut address_to_class_hash = IndexMap::default();
+        address_to_class_hash.insert(ContractAddress::from(1_u32), ClassHash::default());
+        address_to_class_hash.insert(ContractAddress::from(3_u32), ClassHash::default());
+
+        let mut address_to_nonce = IndexMap::default();
+        address_to_nonce.insert(ContractAddress::from(5_u32), Nonce::default());
+        address_to_nonce.insert(ContractAddress::from(7_u32), Nonce::default());
+
+        let mut storage_updates = IndexMap::default();
+        let mut storage_updates_1 = IndexMap::default();
+        storage_updates_1.insert(StorageKey::from(9_u32), StarkFelt::from(1_u32));
+        storage_updates_1.insert(StorageKey::from(11_u32), StarkFelt::from(12_u32));
+        storage_updates.insert(ContractAddress::from(13_u32), storage_updates_1);
+        let mut storage_updates_2 = IndexMap::default();
+        storage_updates_2.insert(StorageKey::from(14_u32), StarkFelt::from(15_u32));
+        storage_updates_2.insert(StorageKey::from(16_u32), StarkFelt::from(17_u32));
+        storage_updates.insert(ContractAddress::from(18_u32), storage_updates_2);
+
+        let mut class_hash_to_compiled_class_hash = IndexMap::default();
+        class_hash_to_compiled_class_hash
+            .insert(ClassHash::default(), CompiledClassHash::default());
+
+        let commitment_state_diff = CommitmentStateDiff {
+            address_to_class_hash,
+            address_to_nonce,
+            storage_updates,
+            class_hash_to_compiled_class_hash,
+        };
+
+        let encoded = commitment_state_diff.encode();
+        #[cfg(feature = "std")]
+        println!("Encoded: {:?}", encoded);
+
+        let decoded = CommitmentStateDiff::decode(&mut &encoded[..]).unwrap();
+        #[cfg(feature = "std")]
+        println!("Decoded: {:?}", decoded);
+
+        assert_eq!(commitment_state_diff, decoded);
+    }
 }
 
 /// Used to track the state diff size, which is determined by the number of new keys.
