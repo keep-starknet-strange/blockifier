@@ -14,46 +14,47 @@ license = "Apache-2.0"
 license-file = "LICENSE"
 
 [workspace.dependencies]
-ark-ff = { version = "0.4.0-alpha.7", default-features = false }
-ark-secp256k1 = { version = "0.4.0", default-features = false }
+ark-ff = { version = "0.4.0-alpha.7", default-features = false, features = [ "std" ] }
+ark-secp256k1 = { version = "0.4.0", default-features = false, features = [ "std" ] }
 assert_matches = { version = "1.5.0", default-features = false }
 cached = { version = "0.44.0", default-features = false }
-cairo-felt = { git = "https://github.com/keep-starknet-strange/cairo-rs.git", branch = "no_std-support-21eff70", default-features = false }
-cairo-vm = { git = "https://github.com/keep-starknet-strange/cairo-rs.git", branch = "no_std-support-21eff70", default-features = false }
-cairo-lang-casm = { git = "https://github.com/keep-starknet-strange/cairo.git", branch = "no_std-support-8bbf530", default-features = false }
-cairo-lang-casm-contract-class = { git = "https://github.com/keep-starknet-strange/cairo.git", branch = "no_std-support-8bbf530", default-features = false }
-cairo-lang-utils = { git = "https://github.com/keep-starknet-strange/cairo.git", branch = "no_std-support-8bbf530", default-features = false }
-cairo-lang-vm-utils = { git = "https://github.com/keep-starknet-strange/cairo.git", branch = "no_std-support-8bbf530", default-features = false }
-ctor = { version = "0.2.0", default-features = false }
-derive_more = { version = "0.99.17", default-features = false }
-hex = { version = "0.4.3", default-features = false }
-indexmap = { git = "https://github.com/bluss/indexmap", rev = "ca5f848e10c31e80aeaad0720d14aa2f6dd6cfb1", default-features = false }
+cairo-felt = { git = "https://github.com/keep-starknet-strange/cairo-rs.git", branch = "no_std-support-21eff70", default-features = false, features = [ "std" ] }
+cairo-vm = { git = "https://github.com/keep-starknet-strange/cairo-rs.git", branch = "no_std-support-21eff70", default-features = false, features = [ "std" ] }
+cairo-lang-casm = { git = "https://github.com/keep-starknet-strange/cairo.git", branch = "no_std-support-8bbf530", default-features = false, features = [ "std" ] }
+cairo-lang-casm-contract-class = { git = "https://github.com/keep-starknet-strange/cairo.git", branch = "no_std-support-8bbf530", default-features = false, features = [ "std" ] }
+cairo-lang-utils = { git = "https://github.com/keep-starknet-strange/cairo.git", branch = "no_std-support-8bbf530", default-features = false, features = [ "std" ] }
+cairo-lang-vm-utils = { git = "https://github.com/keep-starknet-strange/cairo.git", branch = "no_std-support-8bbf530", default-features = false, features = [ "std" ] }
+ctor = { version = "0.2.0", default-features = false, features = [ "std" ] }
+derive_more = { version = "0.99.17", default-features = false  }
+hex = { version = "0.4.3", default-features = false, features = [ "std" ] }
+indexmap = { git = "https://github.com/bluss/indexmap", rev = "ca5f848e10c31e80aeaad0720d14aa2f6dd6cfb1", default-features = false, features = [ "std" ] }
 itertools = { version = "0.10.3", default-features = false }
 keccak = { version = "0.1.3", default-features = false }
-log = { version = "0.4", default-features = false }
-num-bigint = { version = "0.4", default-features = false }
-num-integer = { version = "0.1.45", default-features = false }
-num-traits = { version = "0.2", default-features = false }
+log = { version = "0.4", default-features = false, features = [ "std" ] }
+num-bigint = { version = "0.4", default-features = false, features = [ "std" ] }
+num-integer = { version = "0.1.45", default-features = false, features = [ "std" ] }
+num-traits = { version = "0.2", default-features = false, features = [ "std" ] }
 rstest = { version = "0.17.0", default-features = false }
-ouroboros = { version = "0.15.6", default-features = false }
-papyrus_storage = { version = "0.0.4", default-features = false }
-parity-scale-codec = { version = "3.6.0", default-features = false }
-phf = { version = "0.11", features = ["macros"], default-features = false }
+ouroboros = { version = "0.15.6", default-features = false, features = [ "std" ] }
+papyrus_storage = { version = "0.0.4", default-features = false, features = [ "std" ] }
+parity-scale-codec = { version = "3.6.0", default-features = false, features = [ "std" ] }
+phf = { version = "0.11", features = ["std", "macros"], default-features = false }
 pretty_assertions = { version = "1.2.1", default-features = false, features = [
+  "std",
   "alloc",
 ] }
-scale-info = { version = "2.8.0", default-features = false }
-serde = { version = "1.0.130", default-features = false }
-serde_json = { version = "1.0.81", default-features = false }
-sha3 = { version = "0.10.6", default-features = false }
-spin = { version = "0.9.8", default-features = false }
-starknet_api = { git = "https://github.com/keep-starknet-strange/starknet-api", branch = "no_std-support-dc83f05", default-features = false }
-strum = { version = "0.24.1", default-features = false }
+scale-info = { version = "2.8.0", default-features = false, features = [ "std" ] }
+serde = { version = "1.0.130", default-features = false, features = [ "std" ] }
+serde_json = { version = "1.0.81", default-features = false, features = [ "std" ] }
+sha3 = { version = "0.10.6", default-features = false, features = [ "std" ] }
+spin = { version = "0.9.8", default-features = false, features = [ "std" ] }
+starknet_api = { git = "https://github.com/keep-starknet-strange/starknet-api", branch = "no_std-support-dc83f05", default-features = false, features = [ "std" ] }
+strum = { version = "0.24.1", default-features = false, features = [ "std" ] }
 strum_macros = { version = "0.24.3", default-features = false }
 test-case = { version = "2.2.2", default-features = false }
 hashbrown = { version = "0.14.0", default-features = false }
-thiserror-no-std = { version = "2.0.2", default-features = false }
+thiserror-no-std = { version = "2.0.2", default-features = false, features = [ "std" ] }
 lazy_static = { version = "1.4.0", default-features = false, features = [
   "spin_no_std",
 ] }
-starknet-crypto = { git = "https://github.com/xJonathanLEI/starknet-rs.git", rev = "64ebc36", default-features = false }
+starknet-crypto = { git = "https://github.com/xJonathanLEI/starknet-rs.git", rev = "64ebc36", default-features = false, features = [ "std" ] }

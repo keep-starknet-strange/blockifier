@@ -1149,7 +1149,7 @@ checksum = "38b58827f4464d87d377d175e90bf58eb00fd8716ff0a62f80356b5e61555d0d"
 [[package]]
 name = "sp-arithmetic"
 version = "16.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-polkadot-v1.3.0#401f8a3e9448db854f5605b679fa085b8f445039"
+source = "git+https://github.com/massalabs/polkadot-sdk?branch=release-polkadot-v1.3.0-std#a41673f8aa3f24d7ed8fb1f246a97551eca58837"
 dependencies = [
  "integer-sqrt",
  "num-traits",
@@ -1163,7 +1163,7 @@ dependencies = [
 [[package]]
 name = "sp-std"
 version = "8.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-polkadot-v1.3.0#401f8a3e9448db854f5605b679fa085b8f445039"
+source = "git+https://github.com/massalabs/polkadot-sdk?branch=release-polkadot-v1.3.0-std#a41673f8aa3f24d7ed8fb1f246a97551eca58837"
 
 [[package]]
 name = "spin"
