@@ -137,8 +137,19 @@ pub struct DeprecatedTransactionInfo {
 }
 
 #[derive(
-    derive_more::Add, derive_more::Sum, Clone, Copy, Debug, Default, Eq, PartialEq, Serialize,
+    derive_more::Add,
+    derive_more::Sum,
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    Serialize,
+    Encode,
+    Decode,
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct GasVector {
     pub l1_gas: u128,
     pub l1_data_gas: u128,
@@ -195,15 +206,8 @@ pub struct CommonAccountFields {
 }
 
 /// Contains the information gathered by the execution of a transaction.
-#[derive(
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    Serialize,
-    /* TODO @bidzyyys
-     * Encode, Decode */
-)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct TransactionExecutionInfo {
     /// Transaction validation call info; [None] for `L1Handler`.
     pub validate_call_info: Option<CallInfo>,
