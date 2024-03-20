@@ -19,7 +19,7 @@ use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
 use itertools::Itertools;
 use parity_scale_codec::{Decode, Encode};
 use serde::de::Error as DeserializationError;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use starknet_api::core::EntryPointSelector;
 use starknet_api::deprecated_contract_class::{
     ContractClass as DeprecatedContractClass, EntryPoint, EntryPointOffset, EntryPointType,
@@ -45,7 +45,9 @@ pub mod test;
 
 pub type ContractClassResult<T> = Result<T, ContractClassError>;
 
-#[derive(Clone, Debug, Eq, PartialEq, derive_more::From, Encode, Decode)]
+#[derive(
+    Clone, Debug, Eq, PartialEq, derive_more::From, Encode, Decode, Serialize, Deserialize,
+)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum ContractClass {
     V0(ContractClassV0),
@@ -88,7 +90,7 @@ impl ContractClass {
 }
 
 // V0.
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Encode, Decode)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, Eq, PartialEq, Encode, Decode)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct ContractClassV0(pub Arc<ContractClassV0Inner>);
 impl Deref for ContractClassV0 {
@@ -140,9 +142,9 @@ impl ContractClassV0 {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ContractClassV0Inner {
-    #[serde(deserialize_with = "deserialize_program")]
+    #[serde(with = "serde_program")]
     pub program: Program,
     pub entry_points_by_type: IndexMap<EntryPointType, Vec<EntryPoint>>,
 }
@@ -202,7 +204,7 @@ impl TryFrom<DeprecatedContractClass> for ContractClassV0 {
 }
 
 // V1.
-#[derive(Clone, Debug, Default, Eq, PartialEq, Encode, Decode)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize, Encode, Decode)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct ContractClassV1(pub Arc<ContractClassV1Inner>);
 impl Deref for ContractClassV1 {
@@ -379,8 +381,9 @@ fn get_visited_segments(
     Ok(res)
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ContractClassV1Inner {
+    #[serde(with = "serde_program")]
     pub program: Program,
     pub entry_points_by_type: IndexMap<EntryPointType, Vec<EntryPointV1>>,
     pub hints: IndexMap<String, Hint>,
@@ -457,7 +460,7 @@ impl Decode for ContractClassV1Inner {
     }
 }
 
-#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, Encode, Decode)]
+#[derive(Clone, Debug, Default, Hash, Serialize, Deserialize, Eq, PartialEq, Encode, Decode)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct EntryPointV1 {
     pub selector: EntryPointSelector,
@@ -645,6 +648,39 @@ impl ClassInfo {
                 sierra_program_length,
             })
         }
+    }
+}
+
+mod serde_program {
+    use serde::ser::SerializeSeq;
+
+    use super::*;
+
+    /// Serializes the Program using the ProgramJson
+    pub fn serialize<S: serde::Serializer>(
+        program: &Program,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        let program_as_bytes = program.serialize().map_err(|e| {
+            serde::ser::Error::custom(format!("couldn't convert Program to Vec<u8>: {e}"))
+        })?;
+        let mut seq = serializer.serialize_seq(Some(program_as_bytes.len()))?;
+        for el in &program_as_bytes {
+            seq.serialize_element(el)?;
+        }
+        seq.end()
+    }
+
+    /// Deserializes the Program using the ProgramJson
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Program, D::Error> {
+        let program_as_bytes = <Vec<u8>>::deserialize(deserializer)?;
+        let program = Program::deserialize(&program_as_bytes, None).map_err(|e| {
+            serde::de::Error::custom(format!("couldn't convert Vec<u8> to Program: {e}"))
+        })?;
+
+        Ok(program)
     }
 }
 
