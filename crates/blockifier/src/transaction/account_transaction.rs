@@ -48,7 +48,7 @@ mod flavors_test;
 mod post_execution_test;
 
 /// Represents a paid Starknet transaction.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Eq, PartialEq, Encode, Decode)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum AccountTransaction {
     Declare(DeclareTransaction),

@@ -106,7 +106,7 @@ pub trait ValidatableTransaction {
     ) -> TransactionExecutionResult<Option<CallInfo>>;
 }
 
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, Eq, PartialEq)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct DeclareTransaction {
     pub tx: starknet_api::transaction::DeclareTransaction,
@@ -247,7 +247,7 @@ impl TransactionInfoCreator for DeclareTransaction {
         }
     }
 }
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct DeployAccountTransaction {
     pub tx: starknet_api::transaction::DeployAccountTransaction,
@@ -354,7 +354,7 @@ impl TransactionInfoCreator for DeployAccountTransaction {
     }
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct InvokeTransaction {
     pub tx: starknet_api::transaction::InvokeTransaction,
@@ -465,7 +465,7 @@ impl TransactionInfoCreator for InvokeTransaction {
     }
 }
 
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Eq, PartialEq, Encode, Decode)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct L1HandlerTransaction {
     pub tx: starknet_api::transaction::L1HandlerTransaction,

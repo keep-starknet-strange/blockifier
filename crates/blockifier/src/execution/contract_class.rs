@@ -585,7 +585,7 @@ fn convert_entry_points_v1(
         .collect()
 }
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode)]
 // TODO(Ayelet,10/02/2024): Change to bytes.
 pub struct ClassInfo {
     contract_class: ContractClass,

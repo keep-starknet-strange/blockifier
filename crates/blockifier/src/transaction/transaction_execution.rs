@@ -22,7 +22,7 @@ use crate::transaction::transactions::{
 };
 
 // TODO: Move into transaction.rs, makes more sense to be defined there.
-#[derive(Debug, derive_more::From, Encode, Decode)]
+#[derive(Debug, derive_more::From, Eq, PartialEq, Encode, Decode)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum Transaction {
     AccountTransaction(AccountTransaction),
