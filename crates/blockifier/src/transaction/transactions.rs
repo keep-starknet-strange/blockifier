@@ -106,7 +106,7 @@ pub trait ValidatableTransaction {
     ) -> TransactionExecutionResult<Option<CallInfo>>;
 }
 
-#[derive(Debug, Encode, Decode, Eq, PartialEq)]
+#[derive(Debug, Clone, Encode, Decode, Eq, PartialEq)]
 #[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct DeclareTransaction {
     pub tx: starknet_api::transaction::DeclareTransaction,
