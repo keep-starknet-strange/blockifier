@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
+use parity_scale_codec::{Decode, Encode};
 use starknet_api::core::{calculate_contract_address, ContractAddress};
 use starknet_api::transaction::{Fee, Transaction as StarknetApiTransaction, TransactionHash};
 
@@ -21,7 +22,8 @@ use crate::transaction::transactions::{
 };
 
 // TODO: Move into transaction.rs, makes more sense to be defined there.
-#[derive(Debug, derive_more::From)]
+#[derive(Debug, derive_more::From, Encode, Decode)]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum Transaction {
     AccountTransaction(AccountTransaction),
     L1HandlerTransaction(L1HandlerTransaction),
