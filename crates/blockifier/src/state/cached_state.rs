@@ -60,7 +60,7 @@ impl<S: StateReader> CachedState<S> {
     /// Returns the storage changes done through this state.
     /// For each contract instance (address) we have three attributes: (class hash, nonce, storage
     /// root); the state updates correspond to them.
-    pub fn get_actual_state_changes(&mut self) -> StateResult<StateChanges> {
+    pub fn get_actual_state_changes(&self) -> StateResult<StateChanges> {
         self.update_initial_values_of_write_only_access()?;
         let cache = self.cache.borrow();
 
@@ -118,7 +118,7 @@ impl<S: StateReader> CachedState<S> {
     /// storage-change for fee calculation.
     /// Same for class hash and nonce writes.
     // TODO(Noa, 30/07/23): Consider adding DB getters in bulk (via a DB read transaction).
-    fn update_initial_values_of_write_only_access(&mut self) -> StateResult<()> {
+    fn update_initial_values_of_write_only_access(&self) -> StateResult<()> {
         let cache = &mut *self.cache.borrow_mut();
 
         // Eliminate storage writes that are identical to the initial value (no change). Assumes

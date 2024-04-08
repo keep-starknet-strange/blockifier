@@ -133,7 +133,7 @@ impl FeeCheckReport {
 
     /// If the actual cost exceeds the sender's balance, returns a fee check error.
     fn check_can_pay_fee<S: StateReader>(
-        state: &mut S,
+        state: &S,
         tx_context: &TransactionContext,
         actual_cost: &ActualCost,
     ) -> TransactionExecutionResult<()> {
@@ -192,7 +192,7 @@ impl PostExecutionReport {
     /// Verifies the actual cost can be paid by the account. If not, reports an error and the fee
     /// that should be charged in revert flow.
     pub fn new<S: StateReader>(
-        state: &mut S,
+        state: &S,
         tx_context: &TransactionContext,
         actual_cost: &ActualCost,
         charge_fee: bool,

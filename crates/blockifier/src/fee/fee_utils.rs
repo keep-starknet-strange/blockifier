@@ -141,7 +141,7 @@ pub fn calculate_tx_fee(
 
 /// Returns the current fee balance and a boolean indicating whether the balance covers the fee.
 pub fn get_balance_and_if_covers_fee(
-    state: &mut dyn StateReader,
+    state: &dyn StateReader,
     tx_context: &TransactionContext,
     fee: Fee,
 ) -> TransactionFeeResult<(StarkFelt, StarkFelt, bool)> {
