@@ -31,7 +31,7 @@ pub struct CachedState<S: StateReader> {
     // Invariant: read/write access is managed by CachedState.
     // Using interior mutability to update caches during `State`'s immutable getters.
     cache: RefCell<StateCache>,
-    class_hash_to_class: RefCell<ContractClassMapping>,
+    pub class_hash_to_class: RefCell<ContractClassMapping>,
     // Invariant: managed by CachedState.
     global_class_hash_to_class: GlobalContractCache,
     /// A map from class hash to the set of PC values that were visited in the class.
