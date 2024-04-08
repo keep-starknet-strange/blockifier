@@ -632,13 +632,14 @@ impl TransactionInfoCreator for AccountTransaction {
     }
 }
 
+#[derive(Debug, Encode, Decode)]
 /// Represents a bundle of validate-execute stage execution effects.
-struct ValidateExecuteCallInfo {
-    validate_call_info: Option<CallInfo>,
-    execute_call_info: Option<CallInfo>,
-    revert_error: Option<String>,
-    final_cost: ActualCost,
-    bouncer_resources: ResourcesMapping,
+pub struct ValidateExecuteCallInfo {
+    pub validate_call_info: Option<CallInfo>,
+    pub execute_call_info: Option<CallInfo>,
+    pub revert_error: Option<String>,
+    pub final_cost: ActualCost,
+    pub bouncer_resources: ResourcesMapping,
 }
 
 impl ValidateExecuteCallInfo {

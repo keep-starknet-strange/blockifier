@@ -2,6 +2,7 @@ use std::iter;
 use std::sync::Arc;
 
 use cairo_vm::vm::runners::cairo_runner::ExecutionResources;
+use parity_scale_codec::{Decode, Encode};
 use starknet_api::core::ContractAddress;
 use starknet_api::transaction::Fee;
 
@@ -23,7 +24,7 @@ pub mod test;
 
 // TODO(Gilad): Use everywhere instead of passing the `actual_{fee,resources}` tuple, which often
 // get passed around together.
-#[derive(Default)]
+#[derive(Default, Clone, Debug, Encode, Decode)]
 pub struct ActualCost {
     pub actual_fee: Fee,
     pub da_gas: GasVector,
